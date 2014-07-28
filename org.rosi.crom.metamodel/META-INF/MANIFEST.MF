@@ -7,10 +7,7 @@ Bundle-ClassPath: .
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Export-Package: crom_l1_composed.CompartmentRoleObjectModel,
- crom_l1_composed.CompartmentRoleObjectModel.impl,
- crom_l1_composed.CompartmentRoleObjectModel.util,
- crom_l1_composed,
+Export-Package: crom_l1_composed,
  crom_l1_composed.impl,
  crom_l1_composed.util
 Require-Bundle: org.eclipse.core.runtime,

@@ -65,8 +65,8 @@
         eType="#//Place" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="direction" lowerBound="1"
         eType="#//Direction"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="tr_constraints" upperBound="-1"
-        eType="#//IntraRelationshipConstraint" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tr_constraints" ordered="false"
+        upperBound="-1" eType="#//IntraRelationshipConstraint" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Fulfillment" eSuperTypes="#//Relation">
     <eStructuralFeatures xsi:type="ecore:EReference" name="filled" lowerBound="1"

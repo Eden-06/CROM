@@ -143,6 +143,8 @@
   <eClassifiers xsi:type="ecore:EClass" name="Irreflexive" eSuperTypes="#//IntraRelationshipConstraint"/>
   <eClassifiers xsi:type="ecore:EClass" name="Cyclic" eSuperTypes="#//IntraRelationshipConstraint"/>
   <eClassifiers xsi:type="ecore:EClass" name="Total" eSuperTypes="#//IntraRelationshipConstraint"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Acyclic" eSuperTypes="#//IntraRelationshipConstraint"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Reflexive" eSuperTypes="#//IntraRelationshipConstraint"/>
   <eClassifiers xsi:type="ecore:EClass" name="AbstractRole" abstract="true" interface="true"
       eSuperTypes="#//RoleGroupElement"/>
   <eClassifiers xsi:type="ecore:EClass" name="RoleGroup" eSuperTypes="#//AbstractRole #//RelationTarget">

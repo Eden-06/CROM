@@ -120,6 +120,8 @@
     <genClasses ecoreClass="crom_l1_composed.ecore#//Irreflexive"/>
     <genClasses ecoreClass="crom_l1_composed.ecore#//Cyclic"/>
     <genClasses ecoreClass="crom_l1_composed.ecore#//Total"/>
+    <genClasses ecoreClass="crom_l1_composed.ecore#//Acyclic"/>
+    <genClasses ecoreClass="crom_l1_composed.ecore#//Reflexive"/>
     <genClasses image="false" ecoreClass="crom_l1_composed.ecore#//AbstractRole"/>
     <genClasses ecoreClass="crom_l1_composed.ecore#//RoleGroup">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute crom_l1_composed.ecore#//RoleGroup/lower"/>

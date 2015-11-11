@@ -134,6 +134,7 @@
     <eLiterals name="InseparablePart" value="5"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="RelationshipImplication" eSuperTypes="#//InterRelationshipConstraint"/>
+  <eClassifiers xsi:type="ecore:EClass" name="RelationshipExclusion" eSuperTypes="#//InterRelationshipConstraint"/>
   <eClassifiers xsi:type="ecore:EClass" name="RelationTarget" abstract="true" eSuperTypes="#//NamedElement">
     <eStructuralFeatures xsi:type="ecore:EReference" name="incoming" ordered="false"
         upperBound="-1" eType="#//Relation"/>

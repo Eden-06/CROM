@@ -13,6 +13,6 @@ In addition to the Metamodel, this repository also includes a code generator fro
 
 ## Requirements for the Code Generator
 
-* Eclipse Modeling Tools" (version Luna) [[here]](http://www.eclipse.org/downloads/packages/eclipse-modeling-tools/lunasr2).
+* Eclipse Modeling Tools (version Luna) [[here]](http://www.eclipse.org/downloads/packages/eclipse-modeling-tools/lunasr2).
 * [Xtext](https://github.com/eclipse/xtext)
 * [Xtend](https://github.com/eclipse/xtext-xtend)

@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Generator for the formal Model
+Bundle-SymbolicName: org.rosi.crom.toformal;singleton:=true
+Bundle-Version: 0.9.0
+Bundle-Vendor: TU Dresden
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.resources,
+ org.eclipse.xtend.lib,
+ org.eclipse.xtend.lib.macro,
+ com.google.guava,
+ org.eclipse.xtext.xbase.lib,
+ org.rosi.crom.metamodel;bundle-version="0.1.0",
+ org.eclipse.core.runtime,
+ org.eclipse.emf.ecore.xmi
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+

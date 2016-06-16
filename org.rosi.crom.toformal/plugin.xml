@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            id="org.rosi.crom.toformal.contribution"
+            nameFilter="*.crom"
+            objectClass="org.eclipse.core.resources.IFile">
+         <menu
+               label="Generate"
+               path="additions"
+               id="org.rosi.crom.toformal.menu">
+            <separator
+                  name="generate">
+            </separator>
+         </menu>
+         <action
+               class="org.rosi.crom.toformal.popup.actions.GenerateFormalCromAction"
+               enablesFor="+"
+               id="org.rosi.crom.toformal.GenerateFormalCromAction"
+               label="Formal CROM"
+               menubarPath="org.rosi.crom.toformal.menu/group1"
+               tooltip="Generate the corresponding formal CROM">
+         </action>
+      </objectContribution>
+   </extension>
+
+</plugin>

@@ -5,11 +5,21 @@ import builder.RoleGroup
 import builder.CROModel
 import java.util.ArrayList
 import java.util.HashMap
+import crom_l1_composed.Model
+import builder.CROMVisitor
+import org.eclipse.core.runtime.IPath
 
 class FormalCROMGenerator extends AbstractCROMGenerator {
 
 	new() {
 		super("py")
+	}
+	
+	override generate(IPath path, Model model) {
+			val crom = new CROModel
+			val visitor = new CROMVisitor
+			visitor.visit(crom, model)
+			return generate(crom)
 	}
 
 	private def mklist(List<String> list) '''[«list.map[v|"\"" + v + "\""].join(",")»]'''
@@ -102,7 +112,7 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 		[«builder.ctinh.map[v|mkpair(v)].join(",")»]
 	'''
 
-	override String generate(CROModel builder) '''
+	private def String generate(CROModel builder) '''
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from crom import *
@@ -145,4 +155,7 @@ else:
 
 print
  	'''
+		
+
+		
 }

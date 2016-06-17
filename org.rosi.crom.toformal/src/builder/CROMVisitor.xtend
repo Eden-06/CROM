@@ -28,6 +28,7 @@ import crom_l1_composed.NaturalInheritance
 import crom_l1_composed.DataInheritance
 import crom_l1_composed.CompartmentInheritance
 import crom_l1_composed.RoleInheritance
+import crom_l1_composed.Group
 
 class CROMVisitor {
 
@@ -66,6 +67,13 @@ class CROMVisitor {
 		for (e : model.elements)
 			visit(builder, e)
 		for (r : model.relations)
+			visit(builder, r)
+	}
+	
+	def dispatch void visit(CROModel builder, Group group) {
+		for (e : group.elements)
+			visit(builder, e)
+		for (r : group.relations)
 			visit(builder, r)
 	}
 

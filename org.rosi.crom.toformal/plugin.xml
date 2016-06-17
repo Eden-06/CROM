@@ -25,6 +25,19 @@
                tooltip="Generate the corresponding formal CROM">
          </action>
       </objectContribution>
+      <objectContribution
+            id="org.rosi.crom.toformal.contribution1"
+            nameFilter="*.crom"
+            objectClass="org.eclipse.core.resources.IFile">
+         <action
+               class="org.rosi.crom.toformal.popup.actions.GenerateScrollCodeAction"
+               enablesFor="+"
+               id="org.rosi.crom.toformal.GenerateScrollCodeAction"
+               label="SCROLL Code"
+               menubarPath="org.rosi.crom.toformal.menu/group1"
+               tooltip="Generate the corresponding SCROLL CROM">
+         </action>
+      </objectContribution>
    </extension>
 
 </plugin>

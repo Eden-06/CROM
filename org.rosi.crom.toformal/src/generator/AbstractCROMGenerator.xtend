@@ -3,13 +3,12 @@ package generator
 import org.eclipse.core.runtime.IPath
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.swt.widgets.Shell
-import builder.CROMVisitor
 import org.eclipse.core.resources.ResourcesPlugin
 import java.io.ByteArrayInputStream
 import org.eclipse.core.resources.IResource
 import java.nio.charset.StandardCharsets
 import org.eclipse.jface.dialogs.MessageDialog
-import builder.CROModel
+import crom_l1_composed.Model
 
 abstract class AbstractCROMGenerator implements IGenerator {
 
@@ -21,12 +20,14 @@ abstract class AbstractCROMGenerator implements IGenerator {
 		this.ext = fileext
 	}
 
+	public def getExt(){ return ext; }
+
 	public override generate(Shell shell, IPath path, Resource resource) {
-		val model = new CROModel
-		val visitor = new CROMVisitor
-		for (c : resource.contents)
-			visitor.visit(model, c)
-		val transformation = generate(model);
+		
+		if (!(resource.contents.isEmpty || resource.contents.get(0) instanceof Model))
+			throw new IllegalArgumentException("The given CROM model '" + path.toPortableString + "' was empty?")
+		val model = resource.contents.get(0) as Model
+		val transformation = generate(path,model);
 		val n = path.removeFileExtension().addFileExtension(ext);
 		val target = ResourcesPlugin.getWorkspace().getRoot().getFile(n);
 
@@ -43,5 +44,5 @@ abstract class AbstractCROMGenerator implements IGenerator {
 		
 	}
 
-	public def String generate(CROModel b)
+	public def String generate(IPath path, Model model)
 }

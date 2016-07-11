@@ -38,6 +38,19 @@
                tooltip="Generate the corresponding SCROLL CROM">
          </action>
       </objectContribution>
+      <objectContribution
+            id="org.rosi.crom.toformal.contribution2"
+            nameFilter="*.crom"
+            objectClass="org.eclipse.core.resources.IFile">
+         <action
+               class="org.rosi.crom.toformal.popup.actions.GenerateOntologyAction"
+               enablesFor="+"
+               id="org.rosi.crom.toformal.GenerateOntologyAction"
+               label="OWL Ontology"
+               menubarPath="org.rosi.crom.toformal.menu/group1"
+               tooltip="Generate the corresponding OWL Ontology">
+         </action>
+      </objectContribution>
    </extension>
 
 </plugin>

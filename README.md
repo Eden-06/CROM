@@ -7,9 +7,10 @@ In addition to the Metamodel, this repository also includes a code generator fro
 
 ## Installation
 
-1. Clone the repository to your Eclipse installation
-2. Open the \*.genmodel and Reload it (using the *model/crom\_l1\_composed.ecore* file)
-3. Afterwards, generate all classes via the context menu of the *.genmodel
+1. Make sure you have Java 1.7 installed and set as default for the whole *Eclipse Workbench* **(Very Important)**
+2. Clone the repository to your Eclipse installation
+3. Open the \*.genmodel and Reload it (using the *model/crom\_l1\_composed.ecore* file)
+4. Afterwards, generate all classes via the context menu of the *.genmodel
 
 ## Requirements for the Code Generator
 

@@ -20,7 +20,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	override generate(IPath path, Model model) {
 			val crom = new CROModel
 			val visitor = new CROMVisitor
-			val modelname = path.toFile.name.replace(".crom","")
+			var modelname = path.toFile.name.replace(".crom","")
+			if (modelname.isEmpty)
+				modelname = "CROMOntology"
 			visitor.visit(crom, model)
 			//return ""
 			return generate(crom,modelname)

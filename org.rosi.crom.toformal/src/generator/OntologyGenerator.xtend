@@ -8,6 +8,8 @@ import java.util.HashMap
 import crom_l1_composed.Model
 import builder.CROMVisitor
 import org.eclipse.core.runtime.IPath
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 class OntologyGenerator extends AbstractCROMGenerator {
 
@@ -18,11 +20,14 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	override generate(IPath path, Model model) {
 			val crom = new CROModel
 			val visitor = new CROMVisitor
+			val modelname = path.toFile.name.replace(".crom","")
 			visitor.visit(crom, model)
-			return generate(crom)
+			//return ""
+			return generate(crom,modelname)
 	}
 
-	private def mklist(List<String> list) '''[«list.map[v|"\"" + v + "\""].join(",")»]'''
+	private def mklist(List<String> list) '''«list.map[v|"\"" + v + "\""].join(",")»'''
+	private def mkURIlist(List<String> list) '''«list.map[v|"rosi:" + v].join(", ")»'''
 
 	private def mkpair(Pair<String, String> pair) '''("«pair.key»","«pair.value»")'''
 
@@ -54,7 +59,23 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	def getdt(CROModel builder) { return mklist(builder.dt) }
 
-	def getnt(CROModel builder) { return mklist(builder.nt) }
+	//def getnt(CROModel builder) { return mklist(builder.nt) }
+	def getnt(CROModel builder) { 
+		var res = new String
+		res += "Class: rosi:NatTypes
+    SubClassOf: rosi:Object
+    DisjointUnionOf: " + mkURIlist(builder.nt) + "
+
+"
+		for (nt:builder.nt) {
+			res+="Class: rosi:" + nt +"
+    Annotations: rosi:rigidity true
+    SubClassOf: rosi:NatTypes
+
+"	
+		}
+		return res
+	}
 
 	def getrt(CROModel builder) { return mklist(builder.rt) }
 
@@ -111,12 +132,43 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	def getctinh(CROModel builder) '''
 		[«builder.ctinh.map[v|mkpair(v)].join(",")»]
 	'''
+	
 
-	private def String generate(CROModel builder) '''
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-from crom import *
+	val dateFormat = new SimpleDateFormat("YYYY-MM-dd")
+	val cal = Calendar.getInstance()
 
+
+
+	private def String generate(CROModel builder, String modelname) '''
+Prefix: owl: <http://www.w3.org/2002/07/owl#>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: xml: <http://www.w3.org/XML/1998/namespace>
+Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Prefix: rosi: <http://www.rosi-project.org/ontologies#>
+
+Ontology: <http://www.rosi-project.org/ontologies/«dateFormat.format(cal.getTime())»/«modelname»>
+
+AnnotationProperty: rdfs:comment
+AnnotationProperty: rosi:rigidity
+    SubPropertyOf: rdfs:comment
+AnnotationProperty: rdfs:label
+
+Class: owl:Thing
+    DisjointUnionOf: rosi:Meta, rosi:Object
+
+Class: rosi:Meta
+
+Class: rosi:Object
+
+«builder.getnt»
+
+
+
+ 	'''	
+}
+
+/*
 print "=== Model ==="
 NT=«builder.getnt»
 RT=«builder.getrt»
@@ -154,8 +206,4 @@ else:
 	print "The constraint model is not compliant to the CROM bank"
 
 print
- 	'''
-		
-
-		
-}
+ */

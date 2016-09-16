@@ -1,14 +1,8 @@
-package generator
+package org.rosi.crom.toformal.generator
 
 import org.eclipse.core.runtime.IPath
-import org.eclipse.emf.ecore.resource.Resource
-import org.eclipse.swt.widgets.Shell
-import org.eclipse.core.resources.ResourcesPlugin
-import java.io.ByteArrayInputStream
-import org.eclipse.core.resources.IResource
-import java.nio.charset.StandardCharsets
-import org.eclipse.jface.dialogs.MessageDialog
 import crom_l1_composed.Model
+import generator.CROMGenerator
 
 class ScrollCodeGenerator extends AbstractCROMGenerator {
 
@@ -17,11 +11,10 @@ class ScrollCodeGenerator extends AbstractCROMGenerator {
 	}
 
 	override generate(IPath path, Model model) {
-		var transformation = new CROMGenerator(true).generate(model)
-
 		//Begin of the dirty dirty hack
 		val modelname = path.toFile.name.replace(".crom","")
 		System.out.println(modelname)
+		var transformation = new CROMGenerator(true).generate(model)
 		if (! modelname.isEmpty)
 			transformation=transformation.replace("CROMApplication", modelname)
 		return transformation

@@ -1,6 +1,6 @@
 package org.rosi.crom.toformal.popup.actions;
 
-import generator.ScrollCodeGenerator;
+import org.rosi.crom.toformal.generator.ScrollCodeGenerator;
 
 public class GenerateScrollCodeAction extends AbstractGenerateAction {
 

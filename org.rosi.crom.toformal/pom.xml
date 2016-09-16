@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.rosi.crom.toformal</groupId>
   <artifactId>org.rosi.crom.toformal</artifactId>
-  <version>1.0.0</version>
+  <version>0.9.1</version>
   <name>To Formal CROM</name>
   <description>Generator from CROM to formal CROM</description>
   <build>

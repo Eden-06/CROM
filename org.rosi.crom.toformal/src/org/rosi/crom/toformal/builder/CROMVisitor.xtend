@@ -1,4 +1,4 @@
-package builder
+package org.rosi.crom.toformal.builder
 
 import java.util.List
 import crom_l1_composed.RoleType

@@ -1,7 +1,6 @@
 package org.rosi.crom.toformal.popup.actions;
 
-import generator.DummyGenerator;
-import generator.IGenerator;
+import org.rosi.crom.toformal.generator.DummyGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +20,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IActionDelegate;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
+import org.rosi.crom.toformal.generator.IGenerator;
 
 import crom_l1_composed.Crom_l1_composedPackage;
 

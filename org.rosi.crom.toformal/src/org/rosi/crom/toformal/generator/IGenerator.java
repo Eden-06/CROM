@@ -1,4 +1,4 @@
-package generator;
+package org.rosi.crom.toformal.generator;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.emf.ecore.resource.Resource;

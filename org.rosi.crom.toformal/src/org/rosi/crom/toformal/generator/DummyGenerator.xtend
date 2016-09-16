@@ -1,12 +1,8 @@
-package generator
+package org.rosi.crom.toformal.generator
 
-import generator.IGenerator
+import org.rosi.crom.toformal.generator.IGenerator
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.core.runtime.IPath
-import org.eclipse.core.resources.ResourcesPlugin
-import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
-import org.eclipse.core.resources.IResource
 import crom_l1_composed.Model
 import org.eclipse.swt.widgets.Shell
 import org.eclipse.jface.dialogs.MessageDialog

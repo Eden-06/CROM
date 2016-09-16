@@ -1,4 +1,4 @@
-package builder;
+package org.rosi.crom.toformal.builder;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

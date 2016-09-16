@@ -1,12 +1,12 @@
-package generator
+package org.rosi.crom.toformal.generator
 
 import java.util.List
-import builder.RoleGroup
-import builder.CROModel
+import org.rosi.crom.toformal.builder.RoleGroup
+import org.rosi.crom.toformal.builder.CROModel
 import java.util.ArrayList
 import java.util.HashMap
 import crom_l1_composed.Model
-import builder.CROMVisitor
+import org.rosi.crom.toformal.builder.CROMVisitor
 import org.eclipse.core.runtime.IPath
 
 class FormalCROMGenerator extends AbstractCROMGenerator {

@@ -29,6 +29,7 @@ import crom_l1_composed.DataInheritance
 import crom_l1_composed.CompartmentInheritance
 import crom_l1_composed.RoleInheritance
 import crom_l1_composed.Group
+import crom_l1_composed.DataType
 
 class CROMVisitor {
 
@@ -79,6 +80,12 @@ class CROMVisitor {
 
 	def dispatch void visit(CROModel builder, NaturalType nt) {
 		builder.nt.add(nt.name)
+		builder.fields.put(nt.name, nt.attributes.map[a|a.name -> a.type.name])
+	}
+	
+	def dispatch void visit(CROModel builder, DataType dt) {
+		builder.dt.add(dt.name)
+		builder.fields.put(dt.name, dt.attributes.map[a|a.name -> a.type.name])
 	}
 
 	def dispatch void visit(CROModel builder, RoleType rt) {
@@ -95,6 +102,7 @@ class CROMVisitor {
 			visit(builder, rst, ct.name)
 		for (c : ct.constraints)
 			visit(builder, c, ct.name)
+		builder.fields.put(ct.name, ct.attributes.map[a| a.name->a.type.name ])
 	}
 
 	def dispatch void visit(CROModel builder, Relationship rst, String ct) {
@@ -113,7 +121,7 @@ class CROMVisitor {
 			default: null
 		}
 		if (r != null && r.eContainer != null && r.eContainer.eContainer != null) {
-			val ct = (r.eContainer.eContainer as CompartmentType).name
+			val ct = ((r.eContainer.eContainer) as CompartmentType).name
 			val ot = fills.filler.name
 			val rs = fills.filled.atoms()
 			for (rt : rs)
@@ -134,7 +142,29 @@ class CROMVisitor {
 		if (! builder.rolec.containsKey(ct))
 			builder.rolec.put(ct, new ArrayList<Pair<Cardinality, Object>>)
 		builder.rolec.get(ct).add(c -> rg)
+		
+		val rts=collectRoles(part.role)
+		for (rt:rts){
+			builder.fields.put( ct+"."+rt.name, rt.attributes.map[a|a.name->a.type.name])
+		}				
 	}
+
+	def dispatch List<RoleType> collectRoles(RoleType rt) {
+		return #[rt]
+	}
+	
+	def dispatch List<RoleType> collectRoles(AbstractRoleRef ref) {
+		//Do nothing if you hit a role ref
+		return new ArrayList<RoleType>
+	}
+	
+	def dispatch List<RoleType> collectRoles(crom_l1_composed.RoleGroup rg) {
+		val rts=new ArrayList<RoleType>
+		for(r:rg.elements){
+			rts.addAll(collectRoles(r))
+		}
+		return rts
+	}	
 
 	def dispatch void visit(CROModel builder, RoleConstraint rc, String ct) {
 

@@ -112,6 +112,16 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 		[«builder.ctinh.map[v|mkpair(v)].join(",")»]
 	'''
 
+	/**
+	 * Currently not used
+	 */
+	def getfields(CROModel builder) '''
+		{«builder.fields.entrySet.map[e| "\""+e.key+"\": ["+e.value.map[v|mkpair(v)].join(",")+"]"].join(",")»}
+	'''
+	
+// Possible addition below
+// fields=«builder.getfields»
+
 	private def String generate(CROModel builder) '''
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
@@ -155,7 +165,5 @@ else:
 
 print
  	'''
-		
 
-		
 }

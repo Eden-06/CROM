@@ -51,6 +51,19 @@
                tooltip="Generate the corresponding OWL Ontology">
          </action>
       </objectContribution>
+            <objectContribution
+            id="org.rosi.crom.toformal.contribution3"
+            nameFilter="*.crom"
+            objectClass="org.eclipse.core.resources.IFile">
+         <action
+               class="org.rosi.crom.toformal.popup.actions.GenerateRSQLAction"
+               enablesFor="+"
+               id="org.rosi.crom.toformal.GenerateRSQLAction"
+               label="RSQL Data Definition"
+               menubarPath="org.rosi.crom.toformal.menu/group1"
+               tooltip="Generate the corresponding RSQL Data Definition">
+         </action>
+      </objectContribution>
    </extension>
 
 </plugin>

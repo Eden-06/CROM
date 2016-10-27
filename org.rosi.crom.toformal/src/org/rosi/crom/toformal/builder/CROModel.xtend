@@ -64,6 +64,10 @@ class CROModel {
 	 * $\text{inter} \subseteq RST \times CT \times IRC \times RST $
 	 */
 	public val inter = new HashMap<Pair<Pair<String, String>, String>, String>
+	/**
+	 * $\text{fields} : T \cup (CT \times RT ) \rightarrow \text{MM}( F \times T )$
+	 */
+	public val fields = new HashMap<String, List<Pair<String, String> > >
 
 	def initializeTest() {
 		//CROM

@@ -217,7 +217,7 @@ class CROMVisitor {
 	}
 
 	def dispatch void visit(CROModel builder, CompartmentInheritance ctinh) {
-		builder.dtinh.add(ctinh.sub.name -> ctinh.super.name);
+		builder.ctinh.add(ctinh.sub.name -> ctinh.super.name);
 	}
 
 	def dispatch void visit(CROModel builder, RoleInheritance rtinh) {

@@ -36,7 +36,7 @@ class RSQLGenerator extends AbstractCROMGenerator {
 	 */	
     private val ARRAY="ARRAY"
     
-    private val keywords=#{"limit"}
+    private val keywords=#{"cross", "current_date", "current_time", "current_timestamp", "distinct", "except", "exists", "false", "fetch", "for", "from", "full", "group", "having", "inner", "intersect", "is", "join", "like", "limit", "minus", "natural", "not", "null", "offset", "on", "order", "primary", "rownum", "select", "sysdate", "systime", "systimestamp", "today", "true", "union", "unique", "where"}
 
 	def mkColumnDef(Pair<String, String> pair){
 		if (! mapping.containsKey(pair.value))

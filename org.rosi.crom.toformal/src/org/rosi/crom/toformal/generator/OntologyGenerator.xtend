@@ -14,20 +14,22 @@ class OntologyGenerator extends AbstractCROMGenerator {
 
 	val dateFormat = new SimpleDateFormat("YYYY-MM-dd")
 	val cal = Calendar.getInstance()	
-	val crom = new CROModel
+	var CROModel crom
 
 	new() {
 		super("owl")
+		crom = new CROModel
 	}
 	
-	override generate(IPath path, Model model) {
-			val visitor = new CROMVisitor
-			var modelname = path.toFile.name.replace(".crom","")
-			if (modelname.isEmpty)
-				modelname = "CROMOntology"
-			visitor.visit(crom, model)
-			checkCompartmentInheritance
-			return generate(modelname)
+	override generate(IPath path, Model model) {	
+		crom = new CROModel
+		val visitor = new CROMVisitor
+		var modelname = path.toFile.name.replace(".crom","")
+		if (modelname.isEmpty)
+			modelname = "CROMOntology"
+		visitor.visit(crom, model)
+		checkCompartmentInheritance
+		return generate(modelname)
 	}
 	
 	private def checkCompartmentInheritance() {

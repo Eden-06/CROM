@@ -1,5 +1,5 @@
 *.class
-*.java
+org.rosi.crom.metamodel/**/*.java
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
@@ -12,3 +12,8 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+org.rosi.crom.metamodel.edit/
+org.rosi.crom.metamodel.editor/
+org.rosi.crom.metamodel.tests/
+org.rosi.crom.toformal/.settings/
+org.rosi.crom.toformal/xtend-gen/

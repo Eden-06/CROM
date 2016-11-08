@@ -13,12 +13,7 @@ import org.rosi.crom.toformal.builder.CROModel
 class OntologyGenerator extends AbstractCROMGenerator {
 
 	val dateFormat = new SimpleDateFormat("YYYY-MM-dd")
-	val cal = Calendar.getInstance()
-	
-	var unusedIndividualIndex = 1
-	var unusedMetaConceptIndex = 1
-	var unusedClassAssertionIndex = 1
-	
+	val cal = Calendar.getInstance()	
 	val crom = new CROModel
 
 	new() {
@@ -26,7 +21,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	}
 	
 	override generate(IPath path, Model model) {
-			//val crom = new CROModel
 			val visitor = new CROMVisitor
 			var modelname = path.toFile.name.replace(".crom","")
 			if (modelname.isEmpty)
@@ -119,7 +113,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			 + "\n"
 	}
 	
-		/**
+	/**
 	 * This method prints all axioms for owl:Thing. Note here that axioms without annotation refer
 	 * to the meta level, while axioms with annotation refer to the object level. It also prints
 	 * some other general axioms and class declarations.
@@ -393,13 +387,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 # crom.inter: «crom.inter»
 #
 #
-# TODO: still unhandled
-# compartment types
-# annotations to get object axioms to object level
-# fills relation and domain, range of plays
-# parts relation
-# rel
-#
 # Contraint model:
 # rolec
 # card
@@ -416,24 +403,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		return r
 	}
 
-
-
-}
-
- 
- 
-
- 
- 
- 
- 	//private def mklist(List<String> list) '''«list.map[v|"\"" + v + "\""].join(",")»'''
-	//private def mkIRIlist(List<String> list) '''«list.map[iri|"rosi:" + iri].join(", ")»'''
-
-	//private def mkpair(Pair<String, String> pair) '''("«pair.key»","«pair.value»")'''
-
-
-
-//
 //	public def parts(CROModel model) {
 //		val parts = new HashMap<String, List<String>>
 //		for (e : model.fills) {
@@ -444,33 +413,4 @@ class OntologyGenerator extends AbstractCROMGenerator {
 //		return parts
 //	}
 
-//	def dispatch CharSequence mkrolegroup(RoleGroup rg) '''RoleGroup([«rg.elements.map[e|mkrolegroup(e)].join(",")»],«rg.
-//		card.lower»,«if (rg.card.upper == -1) "inf"	else rg.card.upper»)'''
-//
-//	def dispatch CharSequence mkrolegroup(String o) '''"«o.toString»"'''
-
-
-//	def getparts(CROModel model) '''
-//		{«model.parts().entrySet.map[e|"\"" + e.key + "\": " + mklist(e.value)].join(",")»}
-//	'''
-//
-//	def getrel(CROModel model) '''
-//		{«model.rel.entrySet.map[e|"\"" + e.key.key + "\": " + mkpair(e.value)].join(",")»}
-//	'''
-//
-//	def getrolec(CROModel model) '''
-//		{«model.rolec.entrySet.map[v|
-//			"\"" + v.key + "\": [" + v.value.map[e|"(" + e.key + "," + mkrolegroup(e.value) + ")"].join(",") + "]"].join(",")»}
-//	'''
-//
-//	def getcard(CROModel model) '''
-//		{«model.card.entrySet.map[v|"\"" + v.key.key + "\": (" + v.value.key + "," + v.value.value + ")"].join(",")»}
-//	'''
-//
-//	def getintra(CROModel model) '''
-//		[«model.intra.map[v|"(\"" + v.key.key + "\"," + v.value + ")"].join(",")»]
-//	'''
-//
-//	def getinter(CROModel model) '''
-//		{«model.inter.entrySet.map[v|"(\"" + v.key.key.key + "\","+v.value+",\""+ v.key.value + "\")"].join(",")»}
-//	'''
+}

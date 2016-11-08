@@ -26,8 +26,15 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			if (modelname.isEmpty)
 				modelname = "CROMOntology"
 			visitor.visit(crom, model)
-			//return ""
+			checkCompartmentInheritance
 			return generate(modelname)
+	}
+	
+	private def checkCompartmentInheritance() {
+		if (!crom.ctinh.empty)
+	    	throw new CROMOntologyGeneratorException(
+	    		"Compartment inheritance is not supported by the ontology generator!\n"
+	    		+ crom.ctinh.join("\n"))
 	}
 
 
@@ -241,8 +248,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
     					+ "    ", ", ", "\n", [ x | makeIRI(x) ])
     	        ])
 	}
-
-
+	
 
 	/**
 	 * This method creates the output for the role types that occur in the CROModel.
@@ -363,11 +369,10 @@ class OntologyGenerator extends AbstractCROMGenerator {
 «printRelationshipTypes()»
 
 # TODO:
-# gibt es bei rel jedes rst immer nur einmal?
-# Nat Types: multiple inheritance, for every nattype disjointclassaxiom of its subtypes
+# gibt es bei rel jedes rst immer nur einmal? ja, wenn es keine ctinh gibt, im allg nein
 # Thema Rollengruppen, wo steht fills
 # occurence constraints
-# cardinal constraints: [RT1] 2..5 -------rst1-------- 1..* [RT1] bedeutet jede Rolle vom Typ RT1 hat rst1-Verbindungen zu min 2 und max 5 anderen Rollen
+# cardinal constraints: [RT1] 2..5 -------rst1-------- 1..* [RT1] bedeutet jede Rolle vom Typ RT1 hat rst1-Verbindungen zu min 2 und max 5 anderen Rollen -> Leserichtung genau anders herum
 
 #
 # crom.nt: «crom.nt»
@@ -413,4 +418,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 //		return parts
 //	}
 
+}
+class CROMOntologyGeneratorException extends RuntimeException {
+	new(String message) {
+		super("\n" + message)
+	}
 }

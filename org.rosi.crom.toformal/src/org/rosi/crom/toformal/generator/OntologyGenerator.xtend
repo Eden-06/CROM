@@ -9,6 +9,7 @@ import java.util.Set
 import org.eclipse.core.runtime.IPath
 import org.rosi.crom.toformal.builder.CROMVisitor
 import org.rosi.crom.toformal.builder.CROModel
+import org.rosi.crom.toformal.builder.Cardinality
 
 class OntologyGenerator extends AbstractCROMGenerator {
 
@@ -104,7 +105,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def Set<String> getParticipatingRoleTypes(String compartmentType) {	
 		return crom.fills
-			.filter[ entry | entry.key.value == compartmentType]
+			.filter[ entry | entry.key.value.equals(compartmentType) ]
 			.map[ entry | entry.value ]
 			.toSet
 	}
@@ -115,8 +116,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def Set<String> getFillerTypes(String roleType, String compType) {
 		return crom.fills
-			.filter[ entry | entry.key.value == compType ]
-			.filter[ entry | entry.value == roleType ]
+			.filter[ entry | entry.key.value.equals(compType) ]
+			.filter[ entry | entry.value.equals(roleType) ]
 			.map[ entry | entry.key.key ]
 			.toSet
 	 }
@@ -146,13 +147,13 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method retrieves the set of all subtypes of a given natural type. 
 	 */
 	private def Set<String> getNaturalSubTypes(String superType){
-		return crom.ntinh.filter[ entry | entry.value == superType ]
+		return crom.ntinh.filter[ entry | entry.value.equals(superType) ]
 			.map[ entry | entry.key ]
 			.toSet
 	}
 	
 	/** 
-	 * This method retrieves the set of all natural types that don't have a supertype.
+	 * This method retrieves the set of all natural types that don't have a super type.
 	 */
 	private def Set<String> getTopLevelNaturalTypes() {
 		return naturalTypes
@@ -160,14 +161,65 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			.toSet
 	}
 	
+	/**
+	 * Given a cardinality constraint and the according relationship type, and compartment type,
+	 * this method creates the appropriate sub class axiom
+	 */
+	private def String getAxiomIfConstraining(Cardinality card, String relType, String compType, String domOrRan) {
+		return (if (card.lower > 0 || card.upper != -1)
+				  "    SubClassOf:\n"
+				+ "        Annotations: rdfs:isDefinedBy " + makeIRI(relType + "CardinalConstraintOf" + domOrRan + "In" + compType) + "\n"
+				+ "        " 
+				else "")
+			+ (if (card.lower > 0)
+				makeIRI(relType) + " min " + crom.card.get(relType -> compType).value.lower + " owl:Thing"
+				else "")
+			+ (if (card.lower > 0 && card.upper != -1)
+				", "
+				else "")
+			+ (if (card.upper != -1)
+				makeIRI(relType) + " max " + crom.card.get(relType -> compType).value.upper + " owl:Thing"
+				else "")
+			+ (if (card.lower > 0 || card.upper != -1)
+				"\n"
+				else "")
+	}
 	
+	/**
+	 * This method looks into the cardinality constraints of relationship types whose domain is the
+	 * role type <code>roleType</code> in the compartment type <code>compType</code>. It then
+	 * constructs the according subclass axioms over all such relationship types. 
+	 */
+	private def String getRelationshipTypCardinalityOfDomain(String roleType, String compType) {
+		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
+			.filter[ relType | crom.rel.get(relType -> compType).key.equals(roleType) ]
+			.join("", [ relType | getAxiomIfConstraining(crom.card.get(relType -> compType).value, relType, compType, "Domain") ])
+	}
+	
+	private def String getRelationshipTypCardinalityOfDomainClassDef(String roleType, String compType) {
+		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
+			.filter[ relType | crom.rel.get(relType -> compType).key.equals(roleType) ]
+			.join("\n", [ relType | "Class: " + makeIRI(relType + "CardinalConstraintOfDomainIn" + compType) ])
+	}
+	
+	private def String getRelationshipTypCardinalityOfRange(String roleType, String compType) {
+		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
+			.filter[ relType | crom.rel.get(relType -> compType).value.equals(roleType) ]
+			.join("\n", [ relType | getAxiomIfConstraining(crom.card.get(relType -> compType).key, relType, compType, "Range")])
+	}
+	
+	private def String getRelationshipTypCardinalityOfRangeClassDef(String roleType, String compType) {
+		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
+			.filter[ relType | crom.rel.get(relType -> compType).value.equals(roleType) ]
+			.join("\n", [ relType | "Class: " + makeIRI(relType + "CardinalConstraintOfRangeIn" + compType)])
+	}
 	
 	
 	/**
 	 * This method prints the header of the ontology.
 	 */
 	private def String printHeader(String modelname) '''
-	#
+	# 
 	# This ontology is automatically written by the FRaMED OWL Ontology generator
 	#
 	# The following features are not supported:
@@ -193,7 +245,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method prints the OWL datatype and OWL annotation declarations.
 	 */
-	private def printAnnotationsAndDatatypes() '''
+	private def String printAnnotationsAndDatatypes() '''
 	«printOWLcomment("Used OWL datatypes")»
 	
 	Datatype: xsd:boolean
@@ -216,7 +268,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * to the meta level, while axioms with annotation refer to the object level. It also prints
 	 * some other general axioms and class declarations.
 	 */
-	private def printOWLThingAndOthers() '''
+	private def String printOWLThingAndOthers() '''
 	«printOWLcomment("General axioms and declarations, independent of the CROModel")»
 	Class: owl:Thing
 	    SubClassOf:
@@ -240,7 +292,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method creates the output for the compartment types that occur in the CROModel. It does
 	 * not handle the inheritance relation between compartment types.
 	 */
-	private def printCompartmentTypes() '''
+	private def String printCompartmentTypes() '''
 	«printOWLcomment("The declaration of all compartment types that occur in the model")»
 	
 	Class: «makeIRI("CompartmentTypes")»
@@ -268,7 +320,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method creates the output for the natural types that occur in the CROModel. It also
 	 * handles the inheritance relation between natural types
 	 */
-	private def printNaturalTypes() '''
+	private def String printNaturalTypes() '''
 	«printOWLcomment("The declaration of all natural types that occur in the model")»
 	
 	Class: «makeIRI("NaturalTypes")»
@@ -283,7 +335,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«naturalTypes.join("", "\n", "\n", [ naturalType |  '''
 		Class: «makeIRI(naturalType)»
 			Annotations: «rigidity()» true
-			«crom.ntinh.filter[entry | entry.key == naturalType]
+			«crom.ntinh.filter[entry | entry.key.equals(naturalType) ]
 				.join("", "\n", "\n", [ entry | AnnotatedSubClassOf(entry.value)])»
 		«getNaturalSubTypes(naturalType)
     		.join(AnnotatedDisjointClasses, ", ", "\n", [ x | makeIRI(x) ])»'''])»
@@ -292,8 +344,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method creates the output for the role types that occur in the CROModel.
 	 */
-	private def printRoleTypes() '''
-	«printOWLcomment("The declaration of all role types that occur in the model")»
+	private def String printRoleTypes() '''
+	«printOWLcomment("The declaration of all role types that occur in the model")»	
 	
 	Class: «makeIRI("RoleTypes")»
 	    SubClassOf:
@@ -311,6 +363,10 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«roleTypes.join("\n\n", [ roleType | '''
 		Class: «makeIRI(roleType)»
 		    Annotations: «rigidity()» false
+		«compartmentTypes.join("", [ compType | getRelationshipTypCardinalityOfDomain(roleType, compType) ])»
+		«compartmentTypes.join("", [ compType | getRelationshipTypCardinalityOfRange(roleType, compType) ])»
+		«compartmentTypes.join("", [ compType | getRelationshipTypCardinalityOfDomainClassDef(roleType, compType) ])»
+		«compartmentTypes.join("", [ compType | getRelationshipTypCardinalityOfRangeClassDef(roleType, compType) ])»
 		Class: «makeIRI("Plays" + roleType)»
 		    EquivalentTo:
 		        Annotations: rdfs:label "objectGlobal"
@@ -331,7 +387,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method introduces the plays relation and the correct fills relation as domain range
 	 * constraints dependent on the contexts
 	 */
-	private def printPlays() '''
+	private def String printPlays() '''
 	«printOWLcomment("The declaration of the plays relation as OWL object property")»
 	
 	ObjectProperty: owl:bottomObjectProperty
@@ -350,37 +406,30 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method prints all relationshipTypes and its constraints.
 	 */
-	private def printRelationshipTypes() {
-		return printOWLcomment("The declaration of all relationship types that occur in the model")
-	 		+ ""
-	 		+ relationshipTypes.join("\n",[ relType | 
-	 			  "Class: " + makeIRI(relType + "IsBottom") + "\n"
-	 			+ compartmentTypes
-	 			    .filter[ compType | crom.rel.containsKey(relType -> compType)]
-	 			    .join("", "\n", "\n", [compType | 
-	 			    	  "Class: " + makeIRI(relType + "DomainIn" + compType) + "\n"
-	 			    	+ "Class: " + makeIRI(relType + "RangeIn" + compType) ])
-	 			+ "ObjectProperty: " + makeIRI(relType) + "\n"
-	 			+ "    SubPropertyOf:\n"
-	 			+ "        owl:bottomObjectProperty\n"
-	 			+ "    Domain:\n"
-	 			+ "        Annotations: rdfs:isDefinedBy " + makeIRI(relType + "IsBottom") + "\n"
-	 			+ "        owl:Nothing\n"
-	 			+ compartmentTypes
-	 			    .filter[ compType | crom.rel.containsKey(relType -> compType)]
-	 			    .join("\n", [ compType | 
-	 			    	  "    Domain:\n"
-	 			    	+ "        Annotations: rdfs:isDefinedBy " + makeIRI(relType + "DomainIn" + compType) + "\n"
-	 			    	+ "        " + makeIRI(crom.rel.get(relType -> compType).key) + "\n"
-	 			    	+ "    Range:\n"
-	 			    	+ "        Annotations: rdfs:isDefinedBy " + makeIRI(relType + "RangeIn" + compType) + "\n"
-	 			    	+ "        " + makeIRI(crom.rel.get(relType -> compType).value)]) + "\n"
-//	 			+ compartmentTypes
-//	 			    .filter[ compType | crom.card.containsKey(relType -> compType)]
-//	 			    .join("\n", [compType | "" + crom.card.get(relType -> compType).key.lower ]) 
-	 		])
-	 }
-
+	private def String printRelationshipTypes() '''
+	«printOWLcomment("The declaration of all relationship types that occur in the model")»
+	
+	«relationshipTypes.join("\n\n", [ relType | '''
+		Class: «makeIRI(relType + "IsBottom")»
+		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
+			.join("", "\n", "\n", [compType | '''
+					Class: «makeIRI(relType + "DomainIn" + compType)»
+					Class: «makeIRI(relType + "RangeIn" + compType)»''' ])»
+		ObjectProperty: «makeIRI(relType)»
+		    SubPropertyOf:
+		        owl:bottomObjectProperty
+		    Domain:
+		        Annotations: rdfs:isDefinedBy «makeIRI(relType + "IsBottom")»
+		        owl:Nothing
+		    «compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
+		    	.join("\n", [ compType | '''
+		    		Domain:
+		    			Annotations: rdfs:isDefinedBy «makeIRI(relType + "DomainIn" + compType)»
+		    		    «makeIRI(crom.rel.get(relType -> compType).key)»
+		    		Range:
+		    		    Annotations: rdfs:isDefinedBy «makeIRI(relType + "RangeIn" + compType)»
+		    		    «makeIRI(crom.rel.get(relType -> compType).value)»''' ])»''' ])»
+	'''
 
 	private def String generate(String modelname) '''
 «printHeader(modelname)»
@@ -393,10 +442,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 «printRelationshipTypes()»
 
 # TODO:
-# gibt es bei rel jedes rst immer nur einmal? ja, wenn es keine ctinh gibt, im allg nein
 # Thema Rollengruppen, wo steht fills
 # occurence constraints
-# cardinal constraints: [RT1] 2..5 -------rst1-------- 1..* [RT1] bedeutet jede Rolle vom Typ RT1 hat rst1-Verbindungen zu min 2 und max 5 anderen Rollen -> Leserichtung genau anders herum
+# cardinal constraints: [RT1] 2..5 -------rst1-------- 1..* [RT1] bedeutet jede Rolle vom Typ RT1 hat rst1-Verbindungen zu min 1 und max inf anderen Rollen
 
 #
 # crom.nt: «naturalTypes»

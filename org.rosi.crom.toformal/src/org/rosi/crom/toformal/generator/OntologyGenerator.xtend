@@ -32,9 +32,13 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		checkCompartmentInheritance
 		checkNaturalTypes
 //		checkRoleTypes
-		return generate(modelname)
+		return printOntology(modelname)
 	}
 	
+	/**
+	 * This method checks whether in the given CROM an inheritance relation between compartment
+	 * types is present, and if so throws an exception. 
+	 */
 	private def void checkCompartmentInheritance() {
 		if (!crom.ctinh.empty)
 	    	throw new CROMOntologyGeneratorException(
@@ -42,12 +46,17 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	    		+ crom.ctinh.join("\n"))
 	}
 	
+	/**
+	 * This method checks whether in the given CROM all names of natural types are distinct, and if
+	 * not so throws an exception. 
+	 */
 	private def void checkNaturalTypes() {
 		if (crom.nt.length != naturalTypes.length)
 			throw new CROMOntologyGeneratorException(
 				"Multiple natural types with identical names are detected!\n"
 				+ "Names must be unique!")
 	}
+
 
 	// TODO How to check if the same role types appear in one CT?
 //	private def checkRoleTypes() {	
@@ -66,6 +75,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 //		}]
 //	}
 
+	/**
+	 * A macro for a comment in an OWL file, used to structure the ontology document.
+	 */
 	private def String printOWLcomment(String message) '''
 	
 	
@@ -82,26 +94,47 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * @param str Input string
 	 * @return the complete IRI.
 	 */
-	private def String makeIRI(String str) '''rosi:«str»'''
-//	private def makeIRI(String str) '''<rosi:«str»>'''
-	
-	/** A macro for creating the IRI for "rigidity" */
-	private def String rigidity() '''«makeIRI("rigidity")»'''
-	
-	/** Convert crom.ct from ArrayList<String> to Set<String> */
-	private def Set<String> getCompartmentTypes() { return crom.ct.toSet }
-	
-	/** Convert crom.rst from ArrayList<String> to Set<String> */
-	private def Set<String> getRelationshipTypes() { return crom.rst.toSet }
-	
-	/** Convert crom.rt from ArrayList<String> to Set<String> */
-	private def Set<String> getRoleTypes() { return crom.rt.toSet }
-	
-	/** Convert crom.nt from ArrayList<String> to Set<String> */
-	private def Set<String> getNaturalTypes() { return crom.nt.toSet }
+	private def String makeIRI(String str) {
+		return "rosi:" + str
+	}
 	
 	/** 
-	 * This method retrieves all role types that could be played in a given compartment type
+	 * A macro for creating the IRI for "rigidity".
+	 */
+	private def String rigidity() {
+		return makeIRI("rigidity")
+	}
+	
+	/** 
+	 * Convert crom.ct from ArrayList<String> to Set<String>.
+	 */
+	private def Set<String> getCompartmentTypes() {
+		return crom.ct.toSet
+	}
+	
+	/** 
+	 * Convert crom.rst from ArrayList<String> to Set<String>.
+	 */
+	private def Set<String> getRelationshipTypes() {
+		return crom.rst.toSet
+	}
+	
+	/** 
+	 * Convert crom.rt from ArrayList<String> to Set<String>.
+	 */
+	private def Set<String> getRoleTypes() {
+		return crom.rt.toSet
+	}
+	
+	/** 
+	 * Convert crom.nt from ArrayList<String> to Set<String>.
+	 */
+	private def Set<String> getNaturalTypes() {
+		return crom.nt.toSet
+	}
+	
+	/** 
+	 * This method retrieves all role types that could be played in a given compartment type.
 	 */
 	private def Set<String> getParticipatingRoleTypes(String compartmentType) {	
 		return crom.fills
@@ -122,21 +155,27 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			.toSet
 	 }
 
-	/** A Macro for creating an annotated disjoint union axiom	 */
+	/** 
+	 * A Macro for creating an annotated disjoint union axiom.
+	 */
 	private def String AnnotatedDisJointUnionOf() {
 		return "DisjointUnionOf:\n"
 			 + "	Annotations: rdfs:label \"objectGlobal\"\n"
 			 + "	"
 	}
 	
-	/** A macro for creating an annotated subclass axiom */
+	/** 
+	 * A macro for creating an annotated subclass axiom.
+	 */
 	private def String AnnotatedSubClassOf(String superType) {
 		return "SubClassOf:\n"
 			 + "	Annotations: rdfs:label \"objectGlobal\"\n"
 			 + "	" + makeIRI(superType) 
 	}
 	
-	/** A macro for creating an annotated subclass axiom */
+	/** 
+	 * A macro for creating an annotated subclass axiom
+	 */
 	private def String AnnotatedDisjointClasses() {
 		return "DisjointClasses:\n"
 			 + "	Annotations: rdfs:label \"objectGlobal\"\n"
@@ -163,7 +202,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	
 	/**
 	 * Given a cardinality constraint and the according relationship type, and compartment type,
-	 * this method creates the appropriate sub class axiom
+	 * this method creates the appropriate sub class axiom.
 	 */
 	private def String getAxiomIfConstraining(Cardinality card, String relType, String compType, String domOrRan) {
 		return (if (card.lower > 0 || card.upper != -1)
@@ -188,7 +227,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method looks into the cardinality constraints of relationship types whose domain is the
 	 * role type <code>roleType</code> in the compartment type <code>compType</code>. It then
-	 * constructs the according subclass axioms over all such relationship types. 
+	 * constructs the according subclass axioms for the cardinality constraints over all such
+	 * relationship types. 
 	 */
 	private def String getRelationshipTypCardinalityOfDomain(String roleType, String compType) {
 		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
@@ -196,23 +236,38 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			.join("", [ relType | getAxiomIfConstraining(crom.card.get(relType -> compType).value, relType, compType, "Domain") ])
 	}
 	
+	/**
+	 * This method creates the class declarations used in <code>getRelationshipTypCardinalityOfDomain</code>.
+	 */
 	private def String getRelationshipTypCardinalityOfDomainClassDef(String roleType, String compType) {
 		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
 			.filter[ relType | crom.rel.get(relType -> compType).key.equals(roleType) ]
 			.join("\n", [ relType | "Class: " + makeIRI(relType + "CardinalConstraintOfDomainIn" + compType) ])
 	}
 	
+	/**
+	 * This method looks into the cardinality constraints of relationship types whose range is the
+	 * role type <code>roleType</code> in the compartment type <code>compType</code>. It then
+	 * constructs the according subclass axioms for the cardinality constraints over all such
+	 * relationship types. 
+	 */
 	private def String getRelationshipTypCardinalityOfRange(String roleType, String compType) {
 		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
 			.filter[ relType | crom.rel.get(relType -> compType).value.equals(roleType) ]
 			.join("\n", [ relType | getAxiomIfConstraining(crom.card.get(relType -> compType).key, relType, compType, "Range")])
 	}
 	
+	/**
+	 * This method creates the class declarations used in <code>getRelationshipTypCardinalityOfRange</code>.
+	 */
 	private def String getRelationshipTypCardinalityOfRangeClassDef(String roleType, String compType) {
 		return relationshipTypes.filter[ relType | crom.rel.containsKey(relType -> compType)]
 			.filter[ relType | crom.rel.get(relType -> compType).value.equals(roleType) ]
 			.join("\n", [ relType | "Class: " + makeIRI(relType + "CardinalConstraintOfRangeIn" + compType)])
 	}
+	
+	
+	
 	
 	
 	/**
@@ -318,7 +373,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 
 	/**
 	 * This method creates the output for the natural types that occur in the CROModel. It also
-	 * handles the inheritance relation between natural types
+	 * handles the inheritance relation between natural types.
 	 */
 	private def String printNaturalTypes() '''
 	«printOWLcomment("The declaration of all natural types that occur in the model")»
@@ -385,7 +440,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 
 	/**
 	 * This method introduces the plays relation and the correct fills relation as domain range
-	 * constraints dependent on the contexts
+	 * constraints dependent on the contexts.
 	 */
 	private def String printPlays() '''
 	«printOWLcomment("The declaration of the plays relation as OWL object property")»
@@ -431,47 +486,59 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		    		    «makeIRI(crom.rel.get(relType -> compType).value)»''' ])»''' ])»
 	'''
 
-	private def String generate(String modelname) '''
-«printHeader(modelname)»
-«printAnnotationsAndDatatypes()»
-«printOWLThingAndOthers()»
-«printCompartmentTypes()»
-«printNaturalTypes()»
-«printRoleTypes()»
-«printPlays()»
-«printRelationshipTypes()»
 
-# TODO:
-# Thema Rollengruppen, wo steht fills
-# occurence constraints
-# cardinal constraints: [RT1] 2..5 -------rst1-------- 1..* [RT1] bedeutet jede Rolle vom Typ RT1 hat rst1-Verbindungen zu min 1 und max inf anderen Rollen
 
-#
-# crom.nt: «naturalTypes»
-# crom.ct: «compartmentTypes»
-# crom.rt: «roleTypes»
-# crom.rst: «relationshipTypes»
-#
-# crom.ntinh: «crom.ntinh»
-# crom.ctinh: «crom.ctinh»
-# crom.fills: «crom.fills»
-# crom.newFills: «crom.newFills»
-# crom.rel: «crom.rel»
-#
-# crom.card: «crom.card»
-# crom.rolec: «crom.rolec»
-# crom.intra: «crom.intra»
-# crom.inter: «crom.inter»
-#
-#
-# Contraint model:
-# rolec
-# card
-# intra
-# inter
-#
-#
-'''	
+
+
+	/** 
+	 * This method actually prints the whole ontology document in Manchester OWL syntax.
+	 */
+	private def String printOntology(String modelname) '''
+		«printHeader(modelname)»
+		«printAnnotationsAndDatatypes()»
+		«printOWLThingAndOthers()»
+		«printCompartmentTypes()»
+		«printNaturalTypes()»
+		«printRoleTypes()»
+		«printPlays()»
+		«printRelationshipTypes()»
+
+		# TODO:
+		# Thema Rollengruppen, wo steht fills
+		# occurence constraints
+		# cardinal constraints: [RT1] 2..5 -------rst1-------- 1..* [RT1] bedeutet jede Rolle vom Typ RT1 hat rst1-Verbindungen zu min 1 und max inf anderen Rollen
+
+		#
+		# crom.nt: «naturalTypes»
+		# crom.ct: «compartmentTypes»
+		# crom.rt: «roleTypes»
+		# crom.rst: «relationshipTypes»
+		#
+		# crom.ntinh: «crom.ntinh»
+		# crom.ctinh: «crom.ctinh»
+		# crom.fills: «crom.fills»
+		# crom.newFills: «crom.newFills»
+		# crom.rel: «crom.rel»
+		#
+		# crom.card: «crom.card»
+		# crom.rolec: «crom.rolec»
+		# crom.intra: «crom.intra»
+		# crom.inter: «crom.inter»
+		#
+		#
+		# Contraint model:
+		# rolec
+		# card
+		# intra
+		# inter
+		#
+		#
+	'''	
+
+
+
+
+
 
 	public def newFills(CROModel model) {
 		val r = new ArrayList<Pair<String, String>>

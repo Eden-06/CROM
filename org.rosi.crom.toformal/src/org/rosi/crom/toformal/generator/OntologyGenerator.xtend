@@ -19,8 +19,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 
 	val dateFormat = new SimpleDateFormat("YYYY-MM-dd")
 	val cal = Calendar.getInstance()
-	var int numberOfRoleGroups = 0
-	val HashMap<String, RoleGroup> rgNames = new HashMap()
+	var int numberOfRoleGroups
 	val int headingWidth = 100
 	
 	var CROModel crom
@@ -28,6 +27,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	var Set<String> naturalTypes
 	var Set<String> roleTypes
 	var Set<String> relationshipTypes
+	var HashMap<String, RoleGroup> rgNames
+	var Set<RoleGroup> roleGroups
 
 	new() {
 		super("owl")
@@ -41,15 +42,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		if (modelname.isEmpty)
 			modelname = "CROMOntology"
 		visitor.visit(crom, model)
-		retrieveCompartmentTypes
-		retrieveNaturalTypes
-		retrieveRoleTypes
-		retrieveRelationshipTypes
-		retrieveRoleGroupNames
-		checkCompartmentInheritance
-		checkNaturalTypes
-		checkRelCardConnection
-//		checkRoleTypes
+		setUp()
 		return printOntology(modelname)
 	}
 	
@@ -59,6 +52,23 @@ class OntologyGenerator extends AbstractCROMGenerator {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Methods used in the setup																	 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	private def void setUp() {
+		
+		numberOfRoleGroups = 0
+		rgNames = new HashMap()
+		
+		retrieveCompartmentTypes
+		retrieveNaturalTypes
+		retrieveRoleTypes
+		retrieveRelationshipTypes
+		retrieveRoleGroupNames
+		checkCompartmentInheritance
+		checkNaturalTypes
+		checkRelCardConnection
+//		checkRoleTypes
+		
+	}
 
 	/** 
 	 * Convert crom.ct from ArrayList<String> to Set<String>.
@@ -93,6 +103,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def void retrieveRoleGroupNames() {
 		allRoleGroups.forEach[ roleGroup | rgNames.put(createNewRoleGroupName, roleGroup)]
+		roleGroups = rgNames.values.toSet
 	}
 
 
@@ -125,9 +136,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def void checkCompartmentInheritance() {
 		if (!crom.ctinh.empty)
-	    	throw new CROMOntologyGeneratorException(
-	    		"Compartment inheritance is not supported by the ontology generator!\n"
-	    		+ crom.ctinh.join("\n"))
+			throw new CROMOntologyGeneratorException(
+				"Compartment inheritance is not supported by the ontology generator!\n"
+				+ crom.ctinh.join("\n"))
 	}
 	
 	/**
@@ -207,6 +218,16 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		return "rosi:" + str
 	}
 	
+	/**
+	 * This method adds the prefix to the name of a role group, so it becomes a valid IRI.
+	 * 
+	 * @param roleGroup Input role group
+	 * @return the complete IRI.
+	 */
+	private def String makeIRI(RoleGroup roleGroup) {
+		return makeIRI(roleGroup.name)
+	}
+	
 	/** 
 	 * A macro for creating the IRI for "rigidity".
 	 */
@@ -261,7 +282,89 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		return (obj.class.equals(RoleGroup))
 	}
 		
+	/**
+	 * Given a role group, this method retrieves the associated name.
+	 */
+	private def String getName(RoleGroup roleGroup) {
+		if (rgNames.containsValue(roleGroup))
+			rgNames.filter[ name, rg | rg.equals(roleGroup) ].entrySet.head.key
+		else ""
+	}
 	
+	/**
+	 * Given a cardinality is it constraining at all?
+	 */
+	private def Boolean isConstraining(Cardinality card) {
+		return (card.lower > 0 || card.upper != -1)
+	}
+	 
+	/**
+	 * Given a cardinality is the lower bound constraining?
+	 */
+	private def Boolean isMinConstraining(Cardinality card) {
+		return card.lower > 0
+	}
+	  
+	/**
+	 * Given a cardinality is the upper bound constraining?
+	 */
+	private def Boolean isMaxConstraining(Cardinality card) {
+		return card.upper != -1
+	}
+	  
+	/**
+	 * Given a cardinality is the lower and the upper bound constraining?
+	 */
+	private def Boolean isMinMaxConstraining(Cardinality card) {
+		return (card.lower > 0 && card.upper != -1)
+	}
+	   
+	/**
+	 * This method creates a generic axiom with number restrictions based on a cardinality.
+	 * 
+	 * @param prefix The first part of the axiom, either a subclass axiom or a class assertion
+	 * @param metaConcept the meta concept used in the annotation of the object axiom
+	 * @param card the cardinality
+	 * @param dlRole the OWL object property used, i.e. <code>plays</code>, <code>count</code> or similar
+	 * @param qualNumRestr the expression in the qualified number restriction, can be <code>owl:Thing</code> or a role type/group.
+	 * @param compType the compartment type in which the object axiom should hold.
+	 * 
+	 * @return the correctly formatted owl axiom.
+	 */
+	private def String getCardAxiom(String prefix,
+									String metaConcept,
+									String prefix2, 
+									Cardinality card,
+									String dlRole,
+									String qualNumRestr,
+									String compType
+	){
+		if (card == null)
+			return ""
+		return (if (card.constraining)
+				prefix
+				+ "        Annotations: rdfs:isDefinedBy " + makeIRI(metaConcept) + "\n"
+				+ "        " + prefix2
+				else "")
+			+ (if (card.minConstraining)
+				"(" + dlRole + " min " + card.lower + " " + qualNumRestr + ")"
+				else "")
+			+ (if (card.minMaxConstraining)
+				" and "
+				else "")
+			+ (if (card.maxConstraining)
+				"(" + dlRole + " max " + card.upper + " " + qualNumRestr + ")"
+				else "")
+			+ (if (card.constraining)
+				"\n\n"
+				+ "Class: " + makeIRI(metaConcept) + "\n"
+				+ "\n"
+				+ "Class: " + makeIRI(compType) + "\n"
+				+ "    SubClassOf:\n"
+				+ "        " + makeIRI(metaConcept) + "\n"
+				+ "\n"
+				else "")
+	}
 	
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -328,19 +431,34 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * Given a role group <code>rg</code> this method retrieves all role groups that are nested in <code>rg</code>.
 	 */
-	private def Set<RoleGroup> getRoleGroupElements(RoleGroup roleGroup) {
+	private def Set<RoleGroup> getNestedRoleGroups(RoleGroup roleGroup) {
 		return (roleGroup.elements
 			.filter[ elem | elem.isRoleGroup ]
 			.map[ elem | elem as RoleGroup ]
-			.map[ elem | elem.roleGroupElements + #{elem} ]
+			.map[ elem | elem.nestedRoleGroups + #{elem} ]
 			.flatten + #{roleGroup}).toSet
+	}
+	
+	/**
+	 * Given a role group <code>rg</code> this method retrieves all role types that are nested in <code>rg</code>.
+	 */
+	private def Set<String> getRoleGroupAtoms(RoleGroup roleGroup) {
+		return (roleGroup.elements
+				.filter[ elem | elem.isRoleType ]
+				.map[ elem | elem as String ]
+			+ roleGroup.elements
+				.filter[ elem | elem.isRoleGroup ]
+				.map[ elem | elem as RoleGroup ]
+				.map[ elem | elem.roleGroupAtoms ]
+				.flatten
+			).toSet
 	}
 
 	/**
 	 * This method retrieves all role groups that appear in the CROM.
 	 */
 	private def Set<RoleGroup> getAllRoleGroups() {
-		topLevelRoleGroups.map[ roleGroup | roleGroup.roleGroupElements ].flatten.toSet
+		topLevelRoleGroups.map[ roleGroup | roleGroup.nestedRoleGroups ].flatten.toSet
 	}
 	
 	/**
@@ -349,52 +467,35 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def String createNewRoleGroupName() {
 		numberOfRoleGroups++
-		return "GeneratedRoleGroup-" + numberOfRoleGroups
+		return "GeneratedRoleGroup" + numberOfRoleGroups
 	}
 	
-
+	/**
+	 * Given a role group this method retrieves the names of all its elements, i.e. role types are
+	 * retrieved directly and if another role group is an element then the name is retrieved.
+	 */
+	private def Set<String> getElementNames(RoleGroup rg) {
+		(rg.elements.filter[roleType].map[ elem | elem as String]
+		+ rg.elements.filter[roleGroup].map[ elem | (elem as RoleGroup).name]).toSet
+	}
 	
+	/**
+	 * This method returns <code>true</code> if the given role groups appears in the given
+	 * compartment type, and <code>false</code> otherwise.
+	 */
+	private def Boolean contains(String compType, RoleGroup roleGroup){
 
+		if (!occurrenceConstraintsForRoleGroups.containsKey(compType)) return false
 
-	
+		return occurrenceConstraintsForRoleGroups
+			.get(compType)
+			.map[ elem | elem.value.nestedRoleGroups.contains(roleGroup) ]
+			.contains(true)
+	}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Methods for cardinal constraints of relationship types										 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	/**
-	 * Given a cardinality constraint and the according relationship type, and compartment type,
-	 * this method creates the appropriate sub class axiom.
-	 */
-	private def String getCardinalAxiomIfConstraining(Cardinality card, String relType, 
-						String compType, String roleType, String domOrRan) {
-		val relTypeIRI = 
-			if (domOrRan=="Range") "inverse (" + makeIRI(relType) + ")"
-			else makeIRI(relType)
-		return (if (card.lower > 0 || card.upper != -1)
-				  "Class: " + makeIRI(roleType) + "\n"
-				+ "    SubClassOf:\n"
-				+ "        Annotations: rdfs:isDefinedBy " + makeIRI(relType + "CardinalConstraintOf" + domOrRan + "In" + compType) + "\n"
-				+ "        " 
-				else "")
-			+ (if (card.lower > 0)
-				relTypeIRI + " min " + card.lower + " owl:Thing"
-				else "")
-			+ (if (card.lower > 0 && card.upper != -1)
-				", "
-				else "")
-			+ (if (card.upper != -1)
-				relTypeIRI + " max " + card.upper + " owl:Thing"
-				else "")
-			+ (if (card.lower > 0 || card.upper != -1)
-				"\n\n"
-				+ "Class: " + makeIRI(relType + "CardinalConstraintOf" + domOrRan + "In" + compType) + "\n"
-				+ "\n"
-				+ "Class: " + makeIRI(compType) + "\n"
-				+ "    SubClassOf:\n"
-				+ "        " + makeIRI(relType + "CardinalConstraintOf" + domOrRan + "In" + compType) + "\n"
-				+ "\n"
-				else "")
-	}
 	
 	/**
 	 * For a given relationship type, compartment type and role type this method returns the
@@ -404,13 +505,25 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	private def String getAllCardinalAxioms(String relType, String compType, String roleType) {
 		return 
 			if (crom.card.containsKey(relType -> compType)) {
-				val carddom = crom.card.get(relType -> compType).value
-				val cardran = crom.card.get(relType -> compType).key
 				return 
 					(if (crom.rel.get(relType -> compType).key.equals(roleType)) // roleType ----relType----> ...
-						getCardinalAxiomIfConstraining(carddom, relType, compType, roleType, "Domain")
-					else (if (crom.rel.get(relType -> compType).value.equals(roleType))
-						getCardinalAxiomIfConstraining(cardran, relType, compType, roleType, "Range")
+						getCardAxiom(
+							"Class: " + makeIRI(roleType) + "\n" + "    SubClassOf:\n",
+							relType + "CardinalConstraintOfDomainIn" + compType,
+							"",
+							crom.card.get(relType -> compType).value,
+							makeIRI(relType),
+							"owl:Thing",
+							compType)
+					else (if (crom.rel.get(relType -> compType).value.equals(roleType)) // ... ----relType----> roleType
+						getCardAxiom(
+							"Class: " + makeIRI(roleType) + "\n" + "    SubClassOf:\n",
+							relType + "CardinalConstraintOfRangeIn" + compType,
+							"",
+							crom.card.get(relType -> compType).key,
+							"inverse (" + makeIRI(relType) + ")",
+							"owl:Thing",
+							compType)
 					else ""))
 			} else ""
 	}
@@ -446,69 +559,28 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	
 	/**
 	 * This method retrieves the cardinality of the occurrence constraint for a certain role type
-	 * in a compartment. If there is none, it returns <code>null</code>.
+	 * or role group in a compartment. If there is none, it returns <code>null</code>.
 	 */
-	private def Cardinality getOccurrenceConstraint(String compType, String roleType) {
-		if (!occurrenceConstraintsForRoleTypes.containsKey(compType))
-			return null
-		return occurrenceConstraintsForRoleTypes
-			.filter[ key, value | key.equals(compType) ]
-			.get(compType)
-			.filter[ entry | entry.value.equals(roleType) ]
-			.map[ entry | entry.key ]
-			.head
+	private def Cardinality getOccurrenceConstraintCardinality(String compType, String roleTypeOrGroup) {
+		
+		if (rgNames.containsKey(roleTypeOrGroup))
+			(if (occurrenceConstraintsForRoleGroups.containsKey(compType))
+				return occurrenceConstraintsForRoleGroups
+					.filter[ ct, rg | ct.equals(compType) ]
+					.get(compType)
+					.filter[ entry | entry.value.equals(rgNames.get(roleTypeOrGroup)) ]
+					.map[ entry | entry.key ]
+					.head)
+		else
+			(if (occurrenceConstraintsForRoleTypes.containsKey(compType))
+				return occurrenceConstraintsForRoleTypes
+					.filter[ key, value | key.equals(compType) ]
+					.get(compType)
+					.filter[ entry | entry.value.equals(roleTypeOrGroup) ]
+					.map[ entry | entry.key ]
+					.head)
 	}
 	
-	/**
-	 * This method retrieves the cardinality of the occurrence constraint for a certain role group
-	 * in a compartment. If there is none, it returns <code>null</code>.
-	 */
-	private def Cardinality getOccurrenceConstraint(String compType, RoleGroup roleGroup) {
-		return null
-	}
-	
-	/**
-	 * Given a role type and compartment type, this method retrieves the correct occurrence
-	 * constraint and creates the appropriate class assertion axiom if the constraint is actually
-	 * constraining.
-	 */
-	private def String getTypeAssertionIfConstraining(String roleType, String compType) {
-		val card = getOccurrenceConstraint(compType, roleType)
-		if (card == null) return ""
-		return (if (card.lower > 0 || card.upper != -1)
-				  subsection(roleType + ", " + compType)
-				+ "Individual: " + makeIRI("cardinalityCounter") + "\n"
-				+ "    Types:\n"
-				+ "        Annotations: rdfs:isDefinedBy " + makeIRI(roleType + "OccurrenceConstraintIn" + compType) + "\n"
-				+ "        "
-				else "")
-			+ (if (card.lower > 0)
-				makeIRI("count") + " min " + card.lower + " " + makeIRI(roleType)
-				else "")
-			+ (if (card.lower > 0 && card.upper != -1)
-				", "
-				else "")
-			+ (if (card.upper != -1)
-				makeIRI("count") + " max " + card.upper + " " + makeIRI(roleType)
-				else "")
-			+ (if (card.lower > 0 || card.upper != -1)
-				"\n\n"
-				+ "Class: " + makeIRI(roleType + "OccurrenceConstraintIn" + compType) + "\n"
-				+ "\n"
-				+ "Class: " + makeIRI(compType) + "\n"
-				+ "    " + "SubClassOf: " + makeIRI(roleType + "OccurrenceConstraintIn" + compType) + "\n"
-				+ "\n"
-				else "")
-	}
-	
-	/**
-	 * Given a role group and compartment type, this method retrieves the correct occurrence
-	 * constraint and creates the appropriate class assertion axiom if the constraint is actually
-	 * constraining.
-	 */
-	private def String getTypeAssertionIfConstraining(RoleGroup roleGroup, String compType) {
-		return ""
-	}
 	
 		
 	
@@ -518,41 +590,83 @@ class OntologyGenerator extends AbstractCROMGenerator {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	private def void debug(){
-		
-		val rg = topLevelRoleGroups.get(0)
-		
-		println(topLevelRoleGroups)
-		println(allRoleGroups)
-		println(rg)
-		println(rg.roleGroupElements)
-		retrieveRoleGroupNames
-		println(rgNames)
-		//tmp.forEach[rg | println(rg)]
+		println(modelInfo)
 	}
 
+	/**
+	 * This methods prints some information about the CROM which can be used for example as debug output.
+	 */
+	private def String modelInfo() '''
+		
+		CROM:
+		=====
+		
+		===Natural types:===
+		«if (naturalTypes.empty) "none"
+			else naturalTypes.join("",",\n","\n", [ nt | nt ])»
+		
+		===Compartment types:===
+		«if (compartmentTypes.empty) "none"
+			else compartmentTypes.join("",",\n","\n", [ ct | ct ])»
+		
+		===Role Types:===
+		«if (roleTypes.empty) "none"
+			else roleTypes.join("",",\n","\n", [ rt | rt ])»
+		
+		===Relationship types:===
+		«if (relationshipTypes.empty) "none"
+			else relationshipTypes.join("",",\n","\n", [ rst | rst ])»
+		
+		===Natural type inheritance:===
+		«if (crom.ntinh.empty) "none"
+			else crom.ntinh.join("", ",\n", "\n", [elem | elem.key + " -> " + elem.value])»
+		
+		===Compartment type inheritance:===
+		«if (crom.ctinh.empty) "none"
+			else crom.ctinh.join("", ",\n", "\n", [elem | elem.key + " -> " + elem.value])»
+		
+		===Fills relation:===
+		«if (crom.fills.empty) "none"
+			else crom.fills.join("", "\n", "\n", [ elem | elem.key.key + " -> " + elem.value + " in " + elem.key.value])»
+		
+		===Domain and range of relationship types:===
+		«crom.rel.entrySet.join("", "\n", "\n",
+			[elem | elem.key.key + ": " + elem.value.key + " -> " + elem.value.value + " in " + elem.key.value ])»
+		
+		Constraint Model:
+		=================
+		
+		===Cardinality constraints for relationship types:===
+		«if (crom.card.empty) "none"
+			else crom.card.entrySet.join("", "\n", "\n", 
+				[elem | elem.key.key + " in " + elem.key.value + ": " + elem.value.key + " ----> " + elem.value.value ])»
+		
+		===Occurrence constraints for role types and role groups===
+		«if (crom.rolec.empty) "none"
+			else crom.rolec.entrySet.join("", "\n", "\n", 
+				[ elem | elem.value.join("In " + elem.key + ":\n", "\n", "\n", [ x | x.key + " -> " + x.value])])»
+		
+		===Occurrence constraints, filtered for role groups (with their generated names)===
+		«if (occurrenceConstraintsForRoleGroups.empty) "none"
+			else occurrenceConstraintsForRoleGroups.entrySet.join("", "\n", "\n", 
+				[ elem | elem.value.join("In " + elem.key + ":\n", "\n", "\n", [ x | x.key + " -> " + x.value.name])])»
+		
+		===Top level role groups===
+		«topLevelRoleGroups.join("", "\n", "\n", [ rg | rg.name ])»
+		
+		===Names of role groups===
+		«rgNames.entrySet.join("\n", [ entry | entry.key + " --> " + entry.value])»
+		
+		===Intra compartment constraints:===
+		«if (crom.intra.empty) "none"
+			else crom.intra»
+		
+		===Inter compartment constraints:===
+		«if (crom.inter.empty) "none"
+			else crom.inter»
+	'''
 
 
-	
-	private def newFills(CROModel model) {
-		val r = new ArrayList<Pair<String, String>>
-		for (e : model.fills)
-			r.add(e.key.key -> e.value)
-		return r
-	}
-
-//	public def parts(CROModel model) {
-//		val parts = new HashMap<String, List<String>>
-//		for (e : model.fills) {
-//			if (! parts.containsKey(e.key.value))
-//				parts.put(e.key.value, new ArrayList<String>)
-//			parts.get(e.key.value).add(e.value)
-//		}
-//		return parts
-//	}	
-	
-	
-	
-	
 	
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -615,11 +729,14 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	private def String printOWLThingAndOthers() '''
 		«section("General axioms and declarations, independent of the CROModel")»
 		Class: owl:Thing
-		    SubClassOf:
-		        «makeIRI("CompartmentTypes")»
-		    DisjointUnionOf:
-		        Annotations: rdfs:label "objectGlobal"
-		         «makeIRI("NaturalTypes")», «makeIRI("RoleTypes")», {«makeIRI("cardinalityCounter")»}
+			SubClassOf:
+				«makeIRI("CompartmentTypes")»
+			DisjointUnionOf:
+				Annotations: rdfs:label "objectGlobal"
+				«makeIRI("NaturalTypes")»,
+				«makeIRI("RoleTypes")»,
+				«makeIRI("RoleGroups")»,
+				{«makeIRI("occurrenceCounter")»}
 		
 		Class: owl:Nothing
 		
@@ -629,7 +746,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		Class: «makeIRI("RoleTypes")»
 		
-		Individual: «makeIRI("cardinalityCounter")»
+		Class: «makeIRI("RoleGroups")»
+		
+		Individual: «makeIRI("occurrenceCounter")»
 	'''
 	
 	/**
@@ -641,9 +760,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		Class: «makeIRI("CompartmentTypes")»
 			SubClassOf:
-		        Annotations: rdfs:label "objectGlobal"
-		        owl:Nothing
-		«compartmentTypes.join("    DisjointUnionOf: ", ", ", "\n", [ makeIRI ])»
+				Annotations: rdfs:label "objectGlobal"
+				owl:Nothing
+		«compartmentTypes.join("    DisjointUnionOf:\n        ", ",\n        ", "\n", [ makeIRI ])»
 		
 		«compartmentTypes.join("\n\n", [ compType | "Class: " + makeIRI(compType) ])»
 	'''
@@ -656,8 +775,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«section("The declaration of all natural types that occur in the model")»
 		
 		Class: «makeIRI("NaturalTypes")»
-		    SubClassOf:
-		        owl:Nothing
+			SubClassOf:
+				owl:Nothing
 		
 		«naturalTypes.join("", "\n\n", "\n", [ naturalType |  '''
 			Class: «makeIRI(naturalType)»
@@ -676,8 +795,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			Class: «makeIRI(naturalType)»
 				«crom.ntinh.filter[entry | entry.key.equals(naturalType) ]
 					.join("", "\n", "\n", [ entry | AnnotatedSubClassOf(entry.value)])»
-					«getNaturalSubTypes(naturalType)
-		    			.join(AnnotatedDisjointClasses, ", ", "\n", [makeIRI])»'''])»
+			
+			«getNaturalSubTypes(naturalType)
+				.join(AnnotatedDisjointClasses, ", ", "\n\n", [makeIRI])»'''])»
 	'''
 
 	/**
@@ -688,17 +808,21 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	Class: «makeIRI("RoleTypes")»
 		«roleTypes.join(AnnotatedDisJointUnionOf(), ",\n    ", "\n", [makeIRI] )»
 	
+	Class: «makeIRI("RoleTypes")»
+				SubClassOf:
+					Annotations: rdfs:label "objectGlobal"
+					inverse («makeIRI("plays")») exactly 1 owl:Thing
 	
 	«roleTypes.join("\n\n\n", [ roleType | '''
 		«subsection(roleType)»
 		Class: «makeIRI(roleType)»
-		    Annotations: «rigidity()» false
+			Annotations: «rigidity()» false
 		
 		Class: «makeIRI("Plays" + roleType)»
-		    EquivalentTo:
-		        Annotations: rdfs:label "objectGlobal"
-		        «makeIRI("plays")» some «makeIRI(roleType)»
-		        
+			EquivalentTo:
+				Annotations: rdfs:label "objectGlobal"
+				«makeIRI("plays")» some «makeIRI(roleType)»
+				
 		Class: «makeIRI("NaturalTypes")»
 			SubClassOf:
 				Annotations: rdfs:label "objectGlobal"
@@ -709,33 +833,34 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method handles the fills-relation as domain range constraints dependent on the
 	 * contexts.
 	 */
-	 private def String printFills() '''
-	 	«section("fills relation")»
-	 	«roleTypes.join("\n", [ roleType | '''
-			«subsection(roleType)»
-			
-			Class: «makeIRI("Plays" + roleType)»
+	private def String printFills() '''
+		«section("fills relation")»
+		«roleTypes.join("\n", [ roleType | '''
+		«subsection(roleType)»
+		
+		Class: «makeIRI("Plays" + roleType)»
+			SubClassOf:
+				Annotations: rdfs:isDefinedBy «makeIRI("Fills" + roleType + "IsBottom")»
+				owl:Nothing
+			«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
+				.join("", "\n", "\n", [ compType | '''
 				SubClassOf:
-					Annotations: rdfs:isDefinedBy «makeIRI("Fills" + roleType + "IsBottom")»
-					owl:Nothing
-				«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
-	 				.join("", "\n", "\n", [ compType | '''
-						SubClassOf:
-							Annotations: rdfs:isDefinedBy «makeIRI("Fills" + roleType + "In" + compType)»
-							«getFillerTypes(roleType, compType).join(" or ", [ nt | makeIRI(nt) ])»'''])»
-			
-			«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
-				.join("", "\n", "\n", [ compType | "Class: " + makeIRI("Fills" + roleType + "In" + compType)])»
-			Class: «makeIRI("Fills" + roleType + "IsBottom")»
-			
-			«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
-				.join("", "\n", "\n", [ compType | '''
-					Class: «makeIRI(compType)»
-						SubClassOf: «makeIRI("Fills" + roleType + "In" + compType)»'''])»
-			«compartmentTypes.filter[ compType | getFillerTypes(roleType,compType).empty ]
-				.join("", "\n", "\n", [ compType | '''
-					Class: «makeIRI(compType)»
-						SubClassOf: «makeIRI("Fills" + roleType + "IsBottom")»'''])»
+					Annotations: rdfs:isDefinedBy «makeIRI("Fills" + roleType + "In" + compType)»
+					«getFillerTypes(roleType, compType).join(" or ", [ nt | makeIRI(nt) ])»'''])»
+		
+		«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
+			.join("", "\n", "\n\n", [ compType | "Class: " + makeIRI("Fills" + roleType + "In" + compType)])»
+		Class: «makeIRI("Fills" + roleType + "IsBottom")»
+		
+		«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
+			.join("", "\n\n", "\n", [ compType | '''
+				Class: «makeIRI(compType)»
+					SubClassOf: «makeIRI("Fills" + roleType + "In" + compType)»'''])»
+		
+		«compartmentTypes.filter[ compType | getFillerTypes(roleType,compType).empty ]
+			.join("", "\n\n", "\n", [ compType | '''
+				Class: «makeIRI(compType)»
+					SubClassOf: «makeIRI("Fills" + roleType + "IsBottom")»'''])»
 	 	''' ])»
 	 '''
 
@@ -748,19 +873,15 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	ObjectProperty: owl:bottomObjectProperty
 	
 	ObjectProperty: «makeIRI("plays")»
-	    Domain:
-	        Annotations: rdfs:label "objectGlobal"
-	        «makeIRI("NaturalTypes")»
-	    Range:
-	        Annotations: rdfs:label "objectGlobal"
-	        «makeIRI("RoleTypes")»
-	    SubPropertyOf:
-	        owl:bottomObjectProperty
-	        
-	Class: «makeIRI("RoleTypes")»
-		    SubClassOf:
-		        Annotations: rdfs:label "objectGlobal"
-		        inverse («makeIRI("plays")») exactly 1 owl:Thing
+		Domain:
+			Annotations: rdfs:label "objectGlobal"
+			«makeIRI("NaturalTypes")»
+		Range:
+			Annotations: rdfs:label "objectGlobal"
+			«makeIRI("RoleTypes")» or «makeIRI("RoleGroups")»
+		SubPropertyOf:
+			owl:bottomObjectProperty
+			
 	'''
 
 	/**
@@ -772,19 +893,19 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«relationshipTypes.join("\n\n", [ relType | '''
 		«subsection(relType)»
 		ObjectProperty: «makeIRI(relType)»
-		    SubPropertyOf:
-		        owl:bottomObjectProperty
-		    Domain:
-		        Annotations: rdfs:isDefinedBy «makeIRI(relType + "IsBottom")»
-		        owl:Nothing
-		    «compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
-		    	.join("\n", [ compType | '''
+			SubPropertyOf:
+				owl:bottomObjectProperty
+			Domain:
+				Annotations: rdfs:isDefinedBy «makeIRI(relType + "IsBottom")»
+				owl:Nothing
+			«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
+				.join("\n", [ compType | '''
 					Domain:
 						Annotations: rdfs:isDefinedBy «makeIRI(relType + "DomainIn" + compType)»
-					    «makeIRI(crom.rel.get(relType -> compType).key)»
+						«makeIRI(crom.rel.get(relType -> compType).key)»
 					Range:
 						Annotations: rdfs:isDefinedBy «makeIRI(relType + "RangeIn" + compType)»
-					    «makeIRI(crom.rel.get(relType -> compType).value)»''' ])»
+						«makeIRI(crom.rel.get(relType -> compType).value)»''' ])»
 		
 		Class: «makeIRI(relType + "IsBottom")»
 		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
@@ -826,16 +947,112 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		ObjectProperty: «makeIRI("count")»
 		
 		Class: «makeIRI("RoleTypes")»
-		    EquivalentTo:
+			SubClassOf:
 				Annotations: rdfs:label "objectGlobal"
-				inverse («makeIRI("count")») exactly 1 {«makeIRI("cardinalityCounter")»}
+				inverse («makeIRI("count")») exactly 1 {«makeIRI("occurrenceCounter")»}
+		
+		
+		Class: «makeIRI("RoleGroups")»
+			SubClassOf:
+				Annotations: rdfs:label "objectGlobal"
+				inverse («makeIRI("count")») exactly 1 {«makeIRI("occurrenceCounter")»}
 				
+		Individual: «makeIRI("occurrenceCounter")»
+		
 		«compartmentTypes.filter[ compType | occurrenceConstraintsForRoleTypes.containsKey(compType) ]
-			.join("", [compType | roleTypes
+			.join("", [ compType | roleTypes
 				.filter[ roleType | occurrenceConstraintsForRoleTypes.get(compType)
 					.map[ entry | entry.value].contains(roleType) ]
-				.join("\n", [ roleType | getTypeAssertionIfConstraining(roleType, compType)])])»
+				.join("\n", [ roleType |  
+					getCardAxiom(
+						subsection(roleType + ", " + compType)
+							+ "Individual: " + makeIRI("occurrenceCounter") + "\n"
+							+ "    Types:\n",
+						roleType + "OccurrenceConstraintIn" + compType,
+						"",
+						getOccurrenceConstraintCardinality(compType, roleType),
+						makeIRI("count"),
+						makeIRI(roleType),
+						compType)
+				])])»
+		
+		«compartmentTypes.filter[ compType | occurrenceConstraintsForRoleGroups.containsKey(compType) ]
+			.join("", [ compType | roleGroups
+				.filter[ roleGroup | occurrenceConstraintsForRoleGroups.get(compType)
+					.map[ entry | entry.value].contains(roleGroup) ]
+				.join("\n", [ roleGroup | 
+					getCardAxiom(
+						subsection(roleGroup.name + ", " + compType)
+							+ "Individual: " + makeIRI("occurrenceCounter") + "\n"
+							+ "    Types:\n",
+						roleGroup.name + "OccurrenceConstraintIn" + compType,
+						"",
+						getOccurrenceConstraintCardinality(compType, roleGroup.name),
+						makeIRI("count"),
+						makeIRI(roleGroup.name),
+						compType)
+				])])»
 	'''
+
+	/**
+	 * This method prints all axioms related to role groups.
+	 */
+	private def String printRoleGroups() '''
+		«section("The declaration of all role groups that appear in the CROM.")»
+		Class: «makeIRI("RoleGroups")»
+			«roleGroups.join(AnnotatedDisJointUnionOf(), ",\n	", "\n", [makeIRI] )»
+			
+		Class: «makeIRI("RoleGroups")»
+			SubClassOf:
+				Annotations: rdfs:label "objectGlobal"
+				inverse («makeIRI("plays")») exactly 1 owl:Thing
+		
+		«roleGroups.join("\n\n\n", [roleGroup | '''
+			«subsection(roleGroup.name)»
+			Class: «makeIRI(roleGroup)»
+				Annotations: «rigidity()» false
+			
+			Class: «makeIRI("Plays" + roleGroup.name)»
+				EquivalentTo:
+					Annotations: rdfs:label "objectGlobal"
+					«makeIRI("plays")» some «makeIRI(roleGroup)»
+			
+			Class: «makeIRI("NaturalTypes")»
+				SubClassOf:
+					Annotations: rdfs:label "objectGlobal"
+					«makeIRI("plays")» max 1 «makeIRI(roleGroup)»
+			
+			Class: «makeIRI(roleGroup.name + "Elements")»
+				DisjointUnionOf:
+					Annotations: rdfs:label "objectGlobal"
+					«roleGroup.elementNames.join(", ", [makeIRI])»
+			
+			Class: «makeIRI(roleGroup.name + "Atoms")»
+				EquivalentTo:
+					Annotations: rdfs:label "objectGlobal"
+					«roleGroup.roleGroupAtoms.join(" or ", [makeIRI])»
+			
+			«compartmentTypes.filter[ compType | compType.contains(roleGroup) ]
+				.join("\n\n", [ compType | getCardAxiom(
+					"Class: " + makeIRI("Plays" + roleGroup.name) + "\n" + "    EquivalentTo:\n",
+					"Satisfy" + roleGroup.name + "In" + compType,
+					makeIRI("NaturalTypes") + " and ",
+					roleGroup.card,
+					makeIRI("plays"),
+					makeIRI(roleGroup.name + "Elements"),
+					compType) ])»
+			
+			«if (topLevelRoleGroups.contains(roleGroup)) '''
+				Class: «makeIRI("MustPlay" + roleGroup.name)»
+					EquivalentTo:
+						Annotations: rdfs:label "objectGlobal"
+						«roleGroup.roleGroupAtoms.join(" or ", [ roleType | makeIRI("Plays" + roleType)])»
+					SubClassOf:
+						Annotations: rdfs:label "objectGlobal"
+						«makeIRI("Plays" + roleGroup.name)»
+			''' else ""»
+	 	'''])»
+	 '''
 
 	/**
 	 * This method creates the closing comment for the generated OWL file.
@@ -849,7 +1066,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method actually prints the whole ontology document in Manchester OWL syntax.
 	 */
 	private def String printOntology(String modelname) '''
-«««		«debug»
+		«debug»
 		«printHeader(modelname)»
 		«printAnnotationsAndDatatypes»
 		«printOWLThingAndOthers»
@@ -860,48 +1077,18 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«printNaturalTypeInheritance»
 		«printFills»
 		«printRelationshipTypes»
+		«printRoleGroups»
 		«printCardinalConstraints»
 		«printOccurrenceConstraints»
 		«printEndOfFile»
-
-		# TODO:
-		# Thema Rollengruppen, wo steht fills
-		# occurence constraints von Rollengruppen
-
-		#
-		# crom.nt: «naturalTypes»
-		# crom.ct: «compartmentTypes»
-		# crom.rt: «roleTypes»
-		# crom.rst: «relationshipTypes»
-		#
-		# crom.ntinh: «crom.ntinh»
-		# crom.ctinh: «crom.ctinh»
-		# crom.fills: «crom.fills»
-		# crom.newFills: «crom.newFills»
-		# crom.rel: «crom.rel»
-		#
-		# crom.card: «crom.card»
-		# crom.rolec: «crom.rolec»
-		# crom.intra: «crom.intra»
-		# crom.inter: «crom.inter»
-		#
-		
-		# occurrenceRoleTypes: 
-		# «occurrenceConstraintsForRoleTypes»
-		# «occurrenceConstraintsForRoleTypes.filter[ key, value | key.equals("CompartmentType3") ]»
-		# «occurrenceConstraintsForRoleTypes.filter[ key, value | key.equals("CompartmentType3")]
-			.get("CompartmentType3").filter[ entry | entry.value.equals("RT5") ].map[ entry | entry.key ].get(0)»
-		# occurrenceRoleGroups: «occurrenceConstraintsForRoleGroups»
-		#
-		# Contraint model:
-		# rolec
-		# card
-		# intra
-		# inter
-		#
-		#
 	'''	
 }
+
+
+/**
+ * This exception is thrown when the context ontology should be generated, but the CROModel
+ * contains unsupported elements.
+ */
 class CROMOntologyGeneratorException extends RuntimeException {
 	new(String message) {
 		super("\n" + message)

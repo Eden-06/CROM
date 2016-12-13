@@ -50,6 +50,7 @@ class CROMVisitor {
 
 	def dispatch Object visitRoleGroup(crom_l1_composed.RoleGroup rg) {
 		val es = rg.elements.map[e|visitRoleGroup(e)]
+		//val n = rg.name
 		val l = rg.lower
 		val u = rg.upper
 		return new RoleGroup(l, u, es)
@@ -170,10 +171,11 @@ class CROMVisitor {
 
 		val f = visitRoleGroup(rc.first)
 		val s = visitRoleGroup(rc.second)
+		//val n = define fitting name 
 		val rg = switch rc {
 			RoleImplication: new RoleGroup(1, 2, #[new RoleGroup(0, 0, #[f]), s])
 			RoleProhibition: new RoleGroup(1, 1, #[f, s])
-			RoleEquivalence: new RoleGroup(1, 2, #[new RoleGroup(0, 0, #[f, s]), new RoleGroup(2, 2, #[f, s])])
+			RoleEquivalence: new RoleGroup(2, 2, #[f, s]) //This works due to the fact that Implication becomes a top-level RG
 		}
 		if (! builder.rolec.containsKey(ct))
 			builder.rolec.put(ct, new ArrayList<Pair<Cardinality, Object>>)

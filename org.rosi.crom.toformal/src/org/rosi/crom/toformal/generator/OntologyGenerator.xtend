@@ -253,13 +253,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	}
 	
 	/** 
-	 * A macro for creating the IRI for "rigidity".
-	 */
-	private def String rigidity() {
-		return makeIRI("rigidity")
-	}
-	
-	/** 
 	 * A Macro for creating an annotated disjoint union axiom.
 	 */
 	private def String AnnotatedDisJointUnionOf() {
@@ -746,9 +739,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		# Used OWL annotations
 		#
 		
-		AnnotationProperty: «makeIRI("rigidity")»
-			Range: <http://www.w3.org/2001/XMLSchema#boolean>
-		
 		AnnotationProperty: «makeIRI("isMeta")»
 			Range: <http://www.w3.org/2001/XMLSchema#boolean>
 		
@@ -815,7 +805,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		«naturalTypes.join("", "\n\n", "\n", [ naturalType |  '''
 			Class: «makeIRI(naturalType)»
-				Annotations: «rigidity()» true'''])»
+				Annotations: rdfs:label "rigid"'''])»
 	'''
 
 	/**
@@ -851,7 +841,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«roleTypes.join("\n\n\n", [ roleType | '''
 		«subsection(roleType)»
 		Class: «makeIRI(roleType)»
-			Annotations: «rigidity()» false
+			Annotations: rdfs:label "non-rigid"
 		
 		Class: «makeIRI("Plays" + roleType)»
 			EquivalentTo:
@@ -1049,7 +1039,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«roleGroups.join("\n\n\n", [roleGroup | '''
 			«subsection(roleGroup.name)»
 			Class: «makeIRI(roleGroup)»
-				Annotations: «rigidity()» false
+				Annotations: rdfs:label "non-rigid"
 			
 			Class: «makeIRI("Plays" + roleGroup.name)»
 				EquivalentTo:

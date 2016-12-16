@@ -432,7 +432,17 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			.toSet
 	 }
 	 
-	 
+	 /**
+	  * This method uses the fills-relation to test whether a compartment possesses at least one
+	  * role type that is filled by some natural type.
+	  */
+	 private def Boolean isCompartmentTypeEmpty(String compType) {
+	 	return roleTypes
+	 		.map[ roleType | getFillerTypes(roleType, compType)]
+	 		.flatten
+	 		.toSet
+	 		.isEmpty
+	 }
 	 
 	 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -788,7 +798,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				owl:Nothing
 		«compartmentTypes.join("    DisjointUnionOf:\n        ", ",\n        ", "\n", [ makeIRI ])»
 		
-		«compartmentTypes.join("\n\n", [ compType | "Class: " + makeIRI(compType) ])»
+		«compartmentTypes.join("\n\n", [ compType | "Class: " + makeIRI(compType) + 
+			if (compType.isCompartmentTypeEmpty) "\n    SubClassOf: owl:Nothing" else ""])»
 	'''
 
 	/**

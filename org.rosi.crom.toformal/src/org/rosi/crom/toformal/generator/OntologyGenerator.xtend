@@ -66,6 +66,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		checkCompartmentInheritance
 		checkNaturalTypes
 		checkRelCardConnection
+		checkInterRSTConstraintsEmpty
+		checkIntraRSTConstraintsEmpty
 //		checkRoleTypes
 		
 	}
@@ -162,6 +164,28 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				"The key sets of the cardinal constraints and relationship domain and range constraints must be the same!"
 			)
 	}
+	
+	/**
+	 * This method checks whether there are no inter relationship type constraints, and if so
+	 * throws an exception since the ontology generator does not support these kind of constraints.
+	 */
+	 private def void checkInterRSTConstraintsEmpty() {
+	 	if (!crom.inter.empty)
+	 		throw new CROMOntologyGeneratorException(
+	 			"Inter relationship type constraints, like relationship type implications, are not supported!"
+	 		)
+	 }
+	
+	/**
+	 * This method checks whether there are no intra relationship type constraints, and if so
+	 * throws an exception since the ontology generator does not support these kind of constraints.
+	 */
+	 private def void checkIntraRSTConstraintsEmpty() {
+	 	if (!crom.intra.empty)
+	 		throw new CROMOntologyGeneratorException(
+	 			"Intra relationship type constraints, like irreflexive relationship type constraints, are not supported!"
+	 		)
+	 }
 
 	
 
@@ -657,11 +681,11 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		===Names of role groups===
 		«rgNames.entrySet.join("\n", [ entry | entry.key + " --> " + entry.value])»
 		
-		===Intra compartment constraints:===
+		===Intra relationship type constraints:===
 		«if (crom.intra.empty) "none"
 			else crom.intra»
 		
-		===Inter compartment constraints:===
+		===Inter relationship type constraints:===
 		«if (crom.inter.empty) "none"
 			else crom.inter»
 	'''

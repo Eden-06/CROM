@@ -367,7 +367,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			return ""
 		return (if (card.constraining)
 				prefix
-				+ "        Annotations: rdfs:isDefinedBy " + makeIRI(metaConcept) + "\n"
+				+ "        Annotations: rdfs:isDefinedBy " + makeIRI("___" + metaConcept) + "\n"
 				+ "        " + prefix2
 				else "")
 			+ (if (card.minConstraining)
@@ -381,11 +381,11 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				else "")
 			+ (if (card.constraining)
 				"\n\n"
-				+ "Class: " + makeIRI(metaConcept) + "\n"
+				+ "Class: " + makeIRI("___" + metaConcept) + "\n"
 				+ "\n"
 				+ "Class: " + makeIRI(compType) + "\n"
 				+ "    SubClassOf:\n"
-				+ "        " + makeIRI(metaConcept) + "\n"
+				+ "        " + makeIRI("___" + metaConcept) + "\n"
 				+ "\n"
 				else "")
 	}
@@ -875,27 +875,27 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		Class: «makeIRI("Plays" + roleType)»
 			SubClassOf:
-				Annotations: rdfs:isDefinedBy «makeIRI("Fills" + roleType + "IsBottom")»
+				Annotations: rdfs:isDefinedBy «makeIRI("___Fills" + roleType + "IsBottom")»
 				owl:Nothing
 			«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
 				.join("", "\n", "\n", [ compType | '''
 				SubClassOf:
-					Annotations: rdfs:isDefinedBy «makeIRI("Fills" + roleType + "In" + compType)»
+					Annotations: rdfs:isDefinedBy «makeIRI("___Fills" + roleType + "In" + compType)»
 					«getFillerTypes(roleType, compType).join(" or ", [ nt | makeIRI(nt) ])»'''])»
 		
 		«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
-			.join("", "\n", "\n\n", [ compType | "Class: " + makeIRI("Fills" + roleType + "In" + compType)])»
-		Class: «makeIRI("Fills" + roleType + "IsBottom")»
+			.join("", "\n", "\n\n", [ compType | "Class: " + makeIRI("___Fills" + roleType + "In" + compType)])»
+		Class: «makeIRI("___Fills" + roleType + "IsBottom")»
 		
 		«compartmentTypes.filter[ compType | !getFillerTypes(roleType,compType).empty ]
 			.join("", "\n\n", "\n", [ compType | '''
 				Class: «makeIRI(compType)»
-					SubClassOf: «makeIRI("Fills" + roleType + "In" + compType)»'''])»
+					SubClassOf: «makeIRI("___Fills" + roleType + "In" + compType)»'''])»
 		
 		«compartmentTypes.filter[ compType | getFillerTypes(roleType,compType).empty ]
 			.join("", "\n\n", "\n", [ compType | '''
 				Class: «makeIRI(compType)»
-					SubClassOf: «makeIRI("Fills" + roleType + "IsBottom")»'''])»
+					SubClassOf: «makeIRI("___Fills" + roleType + "IsBottom")»'''])»
 	 	''' ])»
 	 '''
 
@@ -931,36 +931,36 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			SubPropertyOf:
 				owl:bottomObjectProperty
 			Domain:
-				Annotations: rdfs:isDefinedBy «makeIRI(relType + "IsBottom")»
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + relType + "IsBottom")»
 				owl:Nothing
 		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
 			.join("\n", [ compType | '''
 					Domain:
-						Annotations: rdfs:isDefinedBy «makeIRI(relType + "DomainIn" + compType)»
+						Annotations: rdfs:isDefinedBy «makeIRI("___" + relType + "DomainIn" + compType)»
 						«makeIRI(crom.rel.get(relType -> compType).key)»
 					Range:
-						Annotations: rdfs:isDefinedBy «makeIRI(relType + "RangeIn" + compType)»
+						Annotations: rdfs:isDefinedBy «makeIRI("___" + relType + "RangeIn" + compType)»
 						«makeIRI(crom.rel.get(relType -> compType).value)»
 				
 				DisjointClasses:
 					Annotations: rdfs:label "objectGlobal"
 						inverse («makeIRI(relType)») some owl:Thing, «makeIRI(crom.rel.get(relType -> compType).key)»'''])»
 		
-		Class: «makeIRI(relType + "IsBottom")»
+		Class: «makeIRI("___" + relType + "IsBottom")»
 		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
 			.join("", "\n", "\n", [compType | '''
-				Class: «makeIRI(relType + "DomainIn" + compType)»
-				Class: «makeIRI(relType + "RangeIn" + compType)»''' ])»
+				Class: «makeIRI("___" + relType + "DomainIn" + compType)»
+				Class: «makeIRI("___" + relType + "RangeIn" + compType)»''' ])»
 		
 		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
 			.join("", "\n\n", "\n\n", [compType | '''
 				Class: «makeIRI(compType)»
-					SubClassOf: «makeIRI(relType + "DomainIn" + compType)»
-					SubClassOf: «makeIRI(relType + "RangeIn" + compType)»''' ])»
+					SubClassOf: «makeIRI("___" + relType + "DomainIn" + compType)»
+					SubClassOf: «makeIRI("___" + relType + "RangeIn" + compType)»''' ])»
 		«compartmentTypes.filter[ compType | !crom.rel.containsKey(relType -> compType)]
 			.join("", "\n\n", "\n", [compType | '''
 				Class: «makeIRI(compType)»
-					SubClassOf: «makeIRI(relType + "IsBottom")»''' ])»''' ])»
+					SubClassOf: «makeIRI("___" + relType + "IsBottom")»''' ])»''' ])»
 	'''
 
 	/**

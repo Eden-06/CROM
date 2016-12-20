@@ -898,6 +898,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	ObjectProperty: owl:bottomObjectProperty
 	
 	ObjectProperty: «makeIRI("plays")»
+		Annotations: rdfs:label "non-rigid"
 		Domain:
 			Annotations: rdfs:label "objectGlobal"
 			«makeIRI("NaturalTypes")»
@@ -918,6 +919,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«relationshipTypes.join("\n\n", [ relType | '''
 		«subsection(relType)»
 		ObjectProperty: «makeIRI(relType)»
+			Annotations: rdfs:label "non-rigid"
 			SubPropertyOf:
 				owl:bottomObjectProperty
 			Domain:
@@ -974,6 +976,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«section("The declaration of the counter nominal and all the occurrence constraints.")»
 		
 		ObjectProperty: «makeIRI("count")»
+			Annotations: rdfs:label "non-rigid"
 		
 		Class: «makeIRI("RoleTypes")»
 			SubClassOf:

@@ -58,6 +58,8 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference crom_l1_composed.ecore#//CompartmentType/relationships"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference crom_l1_composed.ecore#//CompartmentType/constraints"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference crom_l1_composed.ecore#//CompartmentType/tr_extends"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference crom_l1_composed.ecore#//CompartmentType/contains"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference crom_l1_composed.ecore#//CompartmentType/fulfillments"/>
     </genClasses>
     <genClasses ecoreClass="crom_l1_composed.ecore#//AntiRigidType"/>
     <genClasses ecoreClass="crom_l1_composed.ecore#//RoleType">

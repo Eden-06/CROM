@@ -53,6 +53,10 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="constraints" upperBound="-1"
         eType="#//Constraint" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="tr_extends" eType="#//CompartmentType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contains" upperBound="-1"
+        eType="#//CompartmentType" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fulfillments" upperBound="-1"
+        eType="#//Fulfillment" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="AntiRigidType" eSuperTypes="#//Type"/>
   <eClassifiers xsi:type="ecore:EClass" name="RoleType" eSuperTypes="#//AntiRigidType #//AbstractRole">

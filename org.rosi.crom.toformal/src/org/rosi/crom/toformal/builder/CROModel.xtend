@@ -92,6 +92,7 @@ class CROModel {
 		card.put("advises" -> "Bank", new Cardinality(0, 1) -> new Cardinality(1, -1))
 		card.put("trans" -> "Transaction", new Cardinality(1, 1) -> new Cardinality(1, 1))
 		intra.addAll("advises" -> "Bank" -> "irreflexive")
+		inter.put("own_ca" -> "Bank" -> "own_sa" , "exclusion")
 	}
 
 }

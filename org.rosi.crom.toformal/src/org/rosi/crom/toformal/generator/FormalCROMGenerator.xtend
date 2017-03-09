@@ -67,6 +67,10 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 	def getfills(CROModel builder) '''
 		[«builder.fills().map[v|mkpair(v)].join(",")»]
 	'''
+	
+	def getfills2(CROModel builder)'''
+		[«builder.fills.map[v|mktriple(v)].join(",")»]
+	'''
 
 	def getparts(CROModel builder) '''
 		{«builder.parts().entrySet.map[e|"\"" + e.key + "\": " + mklist(e.value)].join(",")»}
@@ -75,6 +79,10 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 	def getrel(CROModel builder) '''
 		{«builder.rel.entrySet.map[e|"\"" + e.key.key + "\": " + mkpair(e.value)].join(",")»}
 	'''
+	
+	def getrel2(CROModel builder) '''
+		{«builder.rel.entrySet.map[e|"(\"" + e.key.key + "\",\"" + e.key.value + "\"): " + mkpair(e.value)].join(",")»}
+	'''
 
 	def getrolec(CROModel builder) '''
 		{«builder.rolec.entrySet.map[v|
@@ -82,15 +90,15 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 	'''
 
 	def getcard(CROModel builder) '''
-		{«builder.card.entrySet.map[v|"\"" + v.key.key + "\": (" + v.value.key + "," + v.value.value + ")"].join(",")»}
+		{«builder.card.entrySet.map[v|"(\"" + v.key.key+"\",\""+v.key.value + "\"): (" + v.value.key + "," + v.value.value + ")"].join(",")»}
 	'''
 
 	def getintra(CROModel builder) '''
-		[«builder.intra.map[v|"(\"" + v.key.key + "\"," + v.value + ")"].join(",")»]
+		[«builder.intra.map[v|"(\"" + v.key.key + "\",\"" + v.key.value + "\"," + v.value + ")"].join(",")»]
 	'''
 
 	def getinter(CROModel builder) '''
-		{«builder.inter.entrySet.map[v|"(\"" + v.key.key.key + "\","+v.value+",\""+ v.key.value + "\")"].join(",")»}
+		{«builder.inter.entrySet.map[v|"(\"" + v.key.key.key + "\",\"" + v.key.key.value + "\","+v.value+",\""+ v.key.value + "\")"].join(",")»}
 	'''
 
 	/**
@@ -135,10 +143,11 @@ RT=«builder.getrt»
 CT=«builder.getct»
 RST=«builder.getrst»
 fills=«builder.getfills2»
-rel=«builder.getrel»
+rel=«builder.getrel2»
 #legacy
 #fills=«builder.getfills»
 #parts=«builder.getparts»
+#rel=«builder.getrel»
 
 
 model=CROM(NT,RT,CT,RST,fills,rel)
@@ -157,24 +166,28 @@ print "=== Constraint Model ==="
 rolec=«builder.getrolec»
 card=«builder.getcard»
 intra=«builder.getintra»
-# not supported yet
 implication="-|>"
 exclusion=">-<"
 inter=«builder.getinter»
+# not supported yet
+grolec=[]
 
-cm=ConstraintModel(rolec,card,intra)
+cm=ConstraintModel(rolec,card,intra,inter,grolec)
+#legacy
+#cm=ConstraintModel(rolec,card,intra)
+
 
 print cm
 if cm.compliant(model):
-	print "The constraint model is compliant to the CROM bank"
+	print " The constraint model is compliant to the CROM bank"
 else:
-	print "The constraint model is not compliant to the CROM bank"
+	print " The constraint model is not compliant to the CROM bank"
 
 print
  	'''
 	
-	def getfills2(CROModel builder)'''
-		[«builder.fills.map[v|mktriple(v)].join(",")»]
-	'''
+
+	
+
 
 }

@@ -25,6 +25,8 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 	private def mklist(List<String> list) '''[«list.map[v|"\"" + v + "\""].join(",")»]'''
 
 	private def mkpair(Pair<String, String> pair) '''("«pair.key»","«pair.value»")'''
+	
+	private def mktriple(Pair<Pair<String, String>, String> pair) '''("«pair.key.key»","«pair.key.value»","«pair.value»")'''
 
 	public def fills(CROModel model) {
 		val r = new ArrayList<Pair<String, String>>
@@ -132,11 +134,16 @@ NT=«builder.getnt»
 RT=«builder.getrt»
 CT=«builder.getct»
 RST=«builder.getrst»
-fills=«builder.getfills»
-parts=«builder.getparts»
+fills=«builder.getfills2»
 rel=«builder.getrel»
+#legacy
+#fills=«builder.getfills»
+#parts=«builder.getparts»
 
-model=CROM(NT,RT,CT,RST,fills,parts,rel)
+
+model=CROM(NT,RT,CT,RST,fills,rel)
+#legacy
+#model=CROM(NT,RT,CT,RST,fills,parts,rel)
           
 print model
 if model.wellformed():
@@ -165,5 +172,9 @@ else:
 
 print
  	'''
+	
+	def getfills2(CROModel builder)'''
+		[«builder.fills.map[v|mktriple(v)].join(",")»]
+	'''
 
 }

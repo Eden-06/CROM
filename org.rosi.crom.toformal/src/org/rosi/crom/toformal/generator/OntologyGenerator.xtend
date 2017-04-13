@@ -958,10 +958,14 @@ class OntologyGenerator extends AbstractCROMGenerator {
 					Range:
 						Annotations: rdfs:isDefinedBy «makeIRI("___" + relType + "RangeIn" + compType)»
 						«makeIRI(crom.rel.get(relType -> compType).value)»
-				
+				'''])»
+		
+		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]
+					.join("\n", [ compType | '''
 				DisjointClasses:
 					Annotations: rdfs:label "objectGlobal"
-						inverse («makeIRI(relType)») some owl:Thing, «makeIRI(crom.rel.get(relType -> compType).key)»'''])»
+						inverse («makeIRI(relType)») some owl:Thing, «makeIRI(crom.rel.get(relType -> compType).key)»
+						'''])»
 		
 		Class: «makeIRI("___" + relType + "IsBottom")»
 		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)]

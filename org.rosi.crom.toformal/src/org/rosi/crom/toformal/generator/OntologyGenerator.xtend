@@ -58,24 +58,24 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		numberOfRoleGroups = 0
 		rgNames = new HashMap()
 		
-		retrieveCompartmentTypes
-		retrieveNaturalTypes
-		retrieveRoleTypes
+		retrieveCompartmentType
+		retrieveNaturalType
+		retrieveRoleType
 		retrieveRelationshipTypes
 		retrieveRoleGroupNames
 		checkCompartmentInheritance
-		checkNaturalTypes
+		checkNaturalType
 		checkRelCardConnection
 		checkInterRSTConstraintsEmpty
 		checkIntraRSTConstraintsEmpty
-//		checkRoleTypes
+//		checkRoleType
 		
 	}
 
 	/** 
 	 * Convert crom.ct from ArrayList<String> to Set<String>.
 	 */
-	private def void retrieveCompartmentTypes() {
+	private def void retrieveCompartmentType() {
 		compartmentTypes = crom.ct.toSet
 	}
 	
@@ -89,14 +89,14 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/** 
 	 * Convert crom.rt from ArrayList<String> to Set<String>.
 	 */
-	private def void retrieveRoleTypes() {
+	private def void retrieveRoleType() {
 		roleTypes = crom.rt.toSet
 	}
 	
 	/** 
 	 * Convert crom.nt from ArrayList<String> to Set<String>.
 	 */
-	private def void retrieveNaturalTypes() {
+	private def void retrieveNaturalType() {
 		naturalTypes = crom.nt.toSet
 	}
 	
@@ -110,14 +110,14 @@ class OntologyGenerator extends AbstractCROMGenerator {
 
 
 // TODO How to check if the same role types appear in one CT?
-//	private def checkRoleTypes() {	
+//	private def checkRoleType() {	
 //		compartmentTypes.forEach[ compType | {
 //			println(crom.fills)
 //			println(compType)
-//			println(getParticipatingRoleTypes(compType).length)
+//			println(getParticipatingRoleType(compType).length)
 //			println(crom.fills.filter[ entry | entry.key.value == compType]
 //					.map[ entry | entry.value ].length)
-//			if (getParticipatingRoleTypes(compType).length
+//			if (getParticipatingRoleType(compType).length
 //				!= crom.fills.filter[ entry | entry.key.value == compType]
 //					.map[ entry | entry.value ].length)
 //				throw new CROMOntologyGeneratorException(
@@ -147,7 +147,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method checks whether in the given CROM all names of natural types are distinct, and if
 	 * not so throws an exception. 
 	 */
-	private def void checkNaturalTypes() {
+	private def void checkNaturalType() {
 		if (crom.nt.length != naturalTypes.length)
 			throw new CROMOntologyGeneratorException(
 				"Multiple natural types with identical names are detected!\n"
@@ -391,7 +391,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/** 
 	 * This method retrieves the set of all natural types that don't have a super type.
 	 */
-	private def Set<String> getTopLevelNaturalTypes() {
+	private def Set<String> getTopLevelNaturalType() {
 		return naturalTypes
 			.filter[ naturalType | !crom.ntinh.map[ entry | entry.key].contains(naturalType)]
 			.toSet
@@ -565,7 +565,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method retrieves these occurrence constraints that talk about role types.
 	 */
-	private def Map<String,List<Pair<Cardinality,String>>> getOccurrenceConstraintsForRoleTypes() {
+	private def Map<String,List<Pair<Cardinality,String>>> getOccurrenceConstraintsForRoleType() {
 		return crom.rolec.filter[ compType, listOfConstraints | listOfConstraints.map[ e | e.value.isRoleType].contains(true) ]
 			.mapValues[ listOfConstraints | listOfConstraints
 				.filter[ e | e.value.isRoleType ]
@@ -599,8 +599,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 					.map[ entry | entry.key ]
 					.head)
 		else
-			(if (occurrenceConstraintsForRoleTypes.containsKey(compType))
-				return occurrenceConstraintsForRoleTypes
+			(if (occurrenceConstraintsForRoleType.containsKey(compType))
+				return occurrenceConstraintsForRoleType
 					.filter[ key, value | key.equals(compType) ]
 					.get(compType)
 					.filter[ entry | entry.value.equals(roleTypeOrGroup) ]
@@ -754,23 +754,28 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«section("General axioms and declarations, independent of the CROModel")»
 		Class: owl:Thing
 			SubClassOf:
-				«makeIRI("CompartmentTypes")»
+				«makeIRI("CompartmentType")»
 			DisjointUnionOf:
 				Annotations: rdfs:label "objectGlobal"
-				«makeIRI("NaturalTypes")»,
-				«makeIRI("RoleTypes")»,
+				«makeIRI("PotentialPlayer")»,
+				«makeIRI("RoleType")»,
 				«makeIRI("RoleGroups")»,
 				{«makeIRI("occurrenceCounter")»}
 		
 		Class: owl:Nothing
 		
-		Class: «makeIRI("CompartmentTypes")»
+		Class: «makeIRI("CompartmentType")»
 		
-		Class: «makeIRI("NaturalTypes")»
+		Class: «makeIRI("NaturalType")»
 		
-		Class: «makeIRI("RoleTypes")»
+		Class: «makeIRI("RoleType")»
 		
 		Class: «makeIRI("RoleGroups")»
+		
+		Class: «makeIRI("PotentialPlayer")»
+			DisjointUnionOf:
+				Annotations: rdfs:label "objectGlobal"
+				«makeIRI("NaturalType")»#, «makeIRI("CompartmentType")»
 		
 		Individual: «makeIRI("occurrenceCounter")»
 	'''
@@ -779,33 +784,56 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 * This method creates the output for the compartment types that occur in the CROModel. It does
 	 * not handle the inheritance relation between compartment types.
 	 */
-	private def String printCompartmentTypes() '''
+	private def String printCompartmentType() '''
 		«section("The declaration of all compartment types that occur in the model")»
 		
-		Class: «makeIRI("CompartmentTypes")»
+		Class: «makeIRI("CompartmentType")»
 			SubClassOf:
 				Annotations: rdfs:label "objectGlobal"
 				owl:Nothing
-		«compartmentTypes.join("    DisjointUnionOf:\n        ", ",\n        ", "\n", [ makeIRI ])»
+		«compartmentTypes.join("    DisjointUnionOf:\n"
+			                 + "        Annotations: rdfs:label \"objectGlobal\"\n"
+			                 + "        ", ",\n        ", "\n", [ makeIRI ])»
+		«compartmentTypes.join("    DisjointUnionOf:\n"
+			                 + "        ", ",\n        ", "\n", [ makeIRI ])»
 		
 		«compartmentTypes.join("\n\n", [ compType | "Class: " + makeIRI(compType) + 
 			if (compType.isCompartmentTypeEmpty) "\n    SubClassOf: owl:Nothing" else ""])»
+		
+		#ObjectProperty: rosi:nested
+		
+		«compartmentTypes.join("", "", "", [ compType | '''
+		Class: «makeIRI(compType + "PlaysNothing")»
+		Class: «makeIRI(compType + "PlaysSomething")»
+			EquivalentTo:
+				Annotations: rdfs:label "objectGlobal"
+				«makeIRI(compType)» and («makeIRI("plays")» some owl:Thing)
+			SubClassOf:
+				Annotations: rdfs:isDefinedBy «makeIRI(compType + "PlaysNothing")»
+				owl:Nothing
+		
+		#Class: «makeIRI("HasNested" + compType)»
+		#	EquivalentTo:
+		#		not «makeIRI(compType + "PlaysNothing")»
+		#	EquivalentTo:
+		#		(«makeIRI("nested")» some «makeIRI(compType)»)
+		'''])»
 	'''
 
 	/**
 	 * This method creates the output for the natural types that occur in the CROModel. It also
 	 * handles the inheritance relation between natural types.
 	 */
-	private def String printNaturalTypes() '''
+	private def String printNaturalType() '''
 		«section("The declaration of all natural types that occur in the model")»
 		
-		Class: «makeIRI("NaturalTypes")»
+		Class: «makeIRI("NaturalType")»
 			SubClassOf:
 				owl:Nothing
 		
 		«naturalTypes.join("", "\n\n", "\n", [ naturalType |  '''
 			Class: «makeIRI(naturalType)»
-				Annotations: rdfs:label "rigid"'''])»
+			'''])»
 	'''
 
 	/**
@@ -813,8 +841,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def String printNaturalTypeInheritance() '''
 		«section("Natural type inheritance")»
-		Class: «makeIRI("NaturalTypes")»
-			«getTopLevelNaturalTypes().join(AnnotatedDisJointUnionOf(), ", ", "\n", [makeIRI] )»
+		Class: «makeIRI("NaturalType")»
+			«getTopLevelNaturalType().join(AnnotatedDisJointUnionOf(), ", ", "\n", [makeIRI] )»
 			
 		«naturalTypes.join("", "\n", "\n", [ naturalType |  '''
 			Class: «makeIRI(naturalType)»
@@ -828,12 +856,12 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method creates the output for the role types that occur in the CROModel.
 	 */
-	private def String printRoleTypes() '''
+	private def String printRoleType() '''
 	«section("The declaration of all role types that occur in the model")»	
-	Class: «makeIRI("RoleTypes")»
+	Class: «makeIRI("RoleType")»
 		«roleTypes.join(AnnotatedDisJointUnionOf(), ",\n    ", "\n", [makeIRI] )»
 	
-	Class: «makeIRI("RoleTypes")»
+	Class: «makeIRI("RoleType")»
 				SubClassOf:
 					Annotations: rdfs:label "objectGlobal"
 					inverse («makeIRI("plays")») exactly 1 owl:Thing
@@ -841,14 +869,13 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«roleTypes.join("\n\n\n", [ roleType | '''
 		«subsection(roleType)»
 		Class: «makeIRI(roleType)»
-			Annotations: rdfs:label "non-rigid"
 		
 		Class: «makeIRI("Plays" + roleType)»
 			EquivalentTo:
 				Annotations: rdfs:label "objectGlobal"
 				«makeIRI("plays")» some «makeIRI(roleType)»
 				
-		Class: «makeIRI("NaturalTypes")»
+		Class: «makeIRI("PotentialPlayer")»
 			SubClassOf:
 				Annotations: rdfs:label "objectGlobal"
 				«makeIRI("plays")» max 1 «makeIRI(roleType)»''' ])»
@@ -898,13 +925,12 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	ObjectProperty: owl:bottomObjectProperty
 	
 	ObjectProperty: «makeIRI("plays")»
-		Annotations: rdfs:label "non-rigid"
 		Domain:
 			Annotations: rdfs:label "objectGlobal"
-			«makeIRI("NaturalTypes")»
+			«makeIRI("PotentialPlayer")»
 		Range:
 			Annotations: rdfs:label "objectGlobal"
-			«makeIRI("RoleTypes")» or «makeIRI("RoleGroups")»
+			«makeIRI("RoleType")» or «makeIRI("RoleGroups")»
 		SubPropertyOf:
 			owl:bottomObjectProperty
 			
@@ -919,7 +945,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	«relationshipTypes.join("\n\n", [ relType | '''
 		«subsection(relType)»
 		ObjectProperty: «makeIRI(relType)»
-			Annotations: rdfs:label "non-rigid"
 			SubPropertyOf:
 				owl:bottomObjectProperty
 			Domain:
@@ -976,9 +1001,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«section("The declaration of the counter nominal and all the occurrence constraints.")»
 		
 		ObjectProperty: «makeIRI("count")»
-			Annotations: rdfs:label "non-rigid"
 		
-		Class: «makeIRI("RoleTypes")»
+		Class: «makeIRI("RoleType")»
 			SubClassOf:
 				Annotations: rdfs:label "objectGlobal"
 				inverse («makeIRI("count")») exactly 1 {«makeIRI("occurrenceCounter")»}
@@ -991,9 +1015,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				
 		Individual: «makeIRI("occurrenceCounter")»
 		
-		«compartmentTypes.filter[ compType | occurrenceConstraintsForRoleTypes.containsKey(compType) ]
+		«compartmentTypes.filter[ compType | occurrenceConstraintsForRoleType.containsKey(compType) ]
 			.join("", [ compType | roleTypes
-				.filter[ roleType | occurrenceConstraintsForRoleTypes.get(compType)
+				.filter[ roleType | occurrenceConstraintsForRoleType.get(compType)
 					.map[ entry | entry.value].contains(roleType) ]
 				.join("\n", [ roleType |  
 					getCardAxiom(
@@ -1042,14 +1066,13 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«roleGroups.join("\n\n\n", [roleGroup | '''
 			«subsection(roleGroup.name)»
 			Class: «makeIRI(roleGroup)»
-				Annotations: rdfs:label "non-rigid"
 			
 			Class: «makeIRI("Plays" + roleGroup.name)»
 				EquivalentTo:
 					Annotations: rdfs:label "objectGlobal"
 					«makeIRI("plays")» some «makeIRI(roleGroup)»
 			
-			Class: «makeIRI("NaturalTypes")»
+			Class: «makeIRI("NaturalType")»
 				SubClassOf:
 					Annotations: rdfs:label "objectGlobal"
 					«makeIRI("plays")» max 1 «makeIRI(roleGroup)»
@@ -1068,7 +1091,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				.join("\n\n", [ compType | getCardAxiom(
 					"Class: " + makeIRI("Plays" + roleGroup.name) + "\n" + "    EquivalentTo:\n",
 					"Satisfy" + roleGroup.name + "In" + compType,
-					makeIRI("NaturalTypes") + " and ",
+					makeIRI("NaturalType") + " and ",
 					roleGroup.card,
 					makeIRI("plays"),
 					makeIRI(roleGroup.name + "Elements"),
@@ -1102,9 +1125,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«printHeader(modelname)»
 		«printAnnotationsAndDatatypes»
 		«printOWLThingAndOthers»
-		«printCompartmentTypes»
-		«printNaturalTypes»
-		«printRoleTypes»
+		«printCompartmentType»
+		«printNaturalType»
+		«printRoleType»
 		«printPlays»
 		«printNaturalTypeInheritance»
 		«printFills»

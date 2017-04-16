@@ -75,7 +75,7 @@ public abstract class AbstractGenerateAction implements IObjectActionDelegate {
 		resourceSet.getPackageRegistry().put(Crom_l1_composedPackage.eNS_URI,
 				Crom_l1_composedPackage.eINSTANCE);
 		Resource resource = null;
-		for (IPath p : list) {
+		for (IPath p : list) {			
 			try {
 				resource = resourceSet.getResource(
 						URI.createURI(p.toString()), true);

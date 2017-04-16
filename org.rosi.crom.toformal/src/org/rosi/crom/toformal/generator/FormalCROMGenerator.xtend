@@ -7,7 +7,6 @@ import java.util.ArrayList
 import java.util.HashMap
 import crom_l1_composed.Model
 import org.rosi.crom.toformal.builder.CROMVisitor
-import org.eclipse.core.runtime.IPath
 
 class FormalCROMGenerator extends AbstractCROMGenerator {
 
@@ -15,7 +14,7 @@ class FormalCROMGenerator extends AbstractCROMGenerator {
 		super("py")
 	}
 	
-	override generate(IPath path, Model model) {
+	public override generate(String modelname, Model model) {
 			val crom = new CROModel
 			val visitor = new CROMVisitor
 			visitor.visit(crom, model)

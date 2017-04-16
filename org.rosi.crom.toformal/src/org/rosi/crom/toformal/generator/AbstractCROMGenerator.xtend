@@ -27,7 +27,8 @@ abstract class AbstractCROMGenerator implements IGenerator {
 		if (!(resource.contents.isEmpty || resource.contents.get(0) instanceof Model))
 			throw new IllegalArgumentException("The given CROM model '" + path.toPortableString + "' was empty?")
 		val model = resource.contents.get(0) as Model
-		val transformation = generate(path,model);
+		val modelname = path.toFile.name.replace(".crom","")
+		val transformation = generate(modelname,model);
 		val n = path.removeFileExtension().addFileExtension(ext);
 		val target = ResourcesPlugin.getWorkspace().getRoot().getFile(n);
 
@@ -44,5 +45,5 @@ abstract class AbstractCROMGenerator implements IGenerator {
 		
 	}
 
-	public def String generate(IPath path, Model model)
+	public def String generate(String modelname, Model model)
 }

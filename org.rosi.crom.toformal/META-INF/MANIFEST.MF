@@ -11,9 +11,10 @@ Require-Bundle: org.eclipse.ui,
  com.google.guava,
  org.eclipse.xtext.xbase.lib,
  org.rosi.crom.metamodel;bundle-version="0.1.0",
- org.eclipse.core.runtime,
+  org.eclipse.core.runtime,
  org.eclipse.emf.ecore.xmi
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ClassPath: lib/SCROLLGen_jre1.7.0.jar,
  .
+Export-Package: org.rosi.crom.toformal.generator
 

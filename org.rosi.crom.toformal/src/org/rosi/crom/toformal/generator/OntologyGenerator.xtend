@@ -2,12 +2,10 @@ package org.rosi.crom.toformal.generator
 
 import crom_l1_composed.Model
 import java.text.SimpleDateFormat
-import java.util.ArrayList
 import java.util.Calendar
 import java.util.List
 import java.util.Map
 import java.util.Set
-import org.eclipse.core.runtime.IPath
 import org.rosi.crom.toformal.builder.CROMVisitor
 import org.rosi.crom.toformal.builder.CROModel
 import org.rosi.crom.toformal.builder.Cardinality
@@ -35,15 +33,15 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		crom = new CROModel
 	}
 	
-	override generate(IPath path, Model model) {	
+	public override generate(String modelname, Model model) {
 		crom = new CROModel
 		val visitor = new CROMVisitor
-		var modelname = path.toFile.name.replace(".crom","")
+		var name=modelname
 		if (modelname.isEmpty)
-			modelname = "CROMOntology"
+			name = "CROMOntology"
 		visitor.visit(crom, model)
 		setUp()
-		return printOntology(modelname)
+		return printOntology(name)
 	}
 	
 	

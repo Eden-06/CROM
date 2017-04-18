@@ -19,7 +19,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	val cal = Calendar.getInstance()
 	var int numberOfRoleGroups
 	val int headingWidth = 100
-	val boolean compTypesPlayRoles=false
+	val boolean compTypesPlayRoles     = false
+	val boolean roleGroupDeclarationV2 = false
+	val boolean separateRoleTypeAxioms = true
 	
 	var CROModel crom
 	var Set<String> compartmentTypes
@@ -464,16 +466,11 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 	}
 	 }
 	 
-	 private def String getParts(String compType) {
-	 	val list = crom.fills
+	 private def Set<String> getParts(String compType) {
+	 	return crom.fills
 	 		.filter[ entry | entry.key.value.equals(compType)]
 	 		.map[ entry | entry.value ]
-	 		.toList
-	 	if (list.empty) {
-	 		return "owl:Nothing"
-	 	} else {
-	 		return list.join(" or\n\t", [ makeIRI ])
-	 	}
+	 		.toSet
 	 }
 	 	
 	 
@@ -953,6 +950,68 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	'''
 	
 	/**
+	 * This method creates the output for the role types that occur in the CROModel.
+	 */
+	private def String printRoleTypeSeparated() '''
+	«section("The declaration of all role types that occur in the model")»
+	
+	Class: «makeIRI("RoleType")»
+		SubClassOf:
+			Annotations: rdfs:label "objectGlobal"
+			inverse («makeIRI("plays")») exactly 1 owl:Thing
+	
+	Class: «makeIRI("NotParticipatingRoleType")»
+		SubClassOf:
+			Annotations: rdfs:label "objectGlobal"
+			owl:Nothing
+	
+	«compartmentTypes.join("\n", [ compType | '''
+		Class: «makeIRI("___" + compType + ".RoleTypes")»
+		Class: «makeIRI("___" + compType + ".NotPartRoleTypes")»
+		Class: «makeIRI("___" + compType + ".Max1RoleType")»
+		
+		Class: «makeIRI("RoleType")»
+			DisjointUnionOf:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + ".RoleTypes")»
+				«if (getParts(compType).empty) {
+					"owl:Nothing"
+				} else {
+					getParts(compType).join(",\n", [ makeIRI ])
+				}»
+		
+		Class: «makeIRI("NotParticipatingRoleType")»
+			DisjointUnionOf:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + ".NotPartRoleTypes")»
+				«roleTypes.filter[ roleType | !getParts(compType).contains(roleType)].join(",\n", [ makeIRI ])»
+		
+		Class: «makeIRI("PotentialPlayer")»
+			SubClassOf:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + ".Max1RoleType")»
+				«if (getParts(compType).empty) {
+					"owl:Thing"
+				} else {
+					getParts(compType).join(" and\n", [roleType | makeIRI("plays") + " max 1 " + makeIRI(roleType)])
+				}»
+		
+		«getParts(compType).join("\n", [ roleType |'''
+			Class: «makeIRI(roleType)»
+			Class: «makeIRI("___" + compType + ".Plays" + roleType + ".Declaration")»
+			Class: «makeIRI("Plays" + roleType)»
+				EquivalentTo:
+					Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + ".Plays" + roleType + ".Declaration")»
+					«makeIRI("plays")» some «makeIRI(roleType)»
+		'''])»
+		
+		Class: «makeIRI(compType)»
+			SubClassOf:
+				«makeIRI("___" + compType + ".RoleTypes")» and
+				«makeIRI("___" + compType + ".NotPartRoleTypes")» and
+				«makeIRI("___" + compType + ".Max1RoleType")» «getParts(compType)
+					.join("and\n", " and\n", "", [ roleType | makeIRI("___" + compType + ".Plays" + roleType + ".Declaration")])»
+	'''])»
+	'''
+	
+	/**
 	 * This method handles the fills-relation as domain range constraints dependent on the
 	 * contexts.
 	 */
@@ -980,7 +1039,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		Class: «makeIRI("RoleType")»
 			SubClassOf:
 				Annotations: rdfs:isDefinedBy «makeIRI("___PartsOf" + compType)»
-				«getParts(compType)»'''])»
+				owl:Nothing «getParts(compType).join("or\n\t"," or\n\t","", [ makeIRI ])»'''])»
 	 '''
 
 	/**
@@ -1097,7 +1156,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	/**
 	 * This method prints all axioms related to role groups.
 	 */
-	private def String printRoleGroups() '''
+	private def String printRoleGroups_v2() '''
 		«section("The declaration of all role groups that appear in the CROM.")»
 		Class: «makeIRI("RoleGroups")»
 			«roleGroups.join(AnnotatedDisJointUnionOf(), ",\n	", "\n", [makeIRI] )»
@@ -1145,6 +1204,65 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 '''
 
 	/**
+	 * This method prints all axioms related to role groups.
+	 */
+	private def String printRoleGroups_v1() '''
+		«section("The declaration of all role groups that appear in the CROM.")»
+		Class: «makeIRI("RoleGroups")»
+			«roleGroups.join(AnnotatedDisJointUnionOf(), ",\n	", "\n", [makeIRI] )»
+			
+		Class: «makeIRI("RoleGroups")»
+			SubClassOf:
+				Annotations: rdfs:label "objectGlobal"
+				inverse («makeIRI("plays")») exactly 1 owl:Thing
+		
+		«roleGroups.join("\n\n\n", [roleGroup | '''
+			«subsection(roleGroup.name)»
+			Class: «makeIRI(roleGroup)»
+			
+			Class: «makeIRI("Plays" + roleGroup.name)»
+				EquivalentTo:
+					Annotations: rdfs:label "objectGlobal"
+					«makeIRI("plays")» some «makeIRI(roleGroup)»
+			
+			Class: «makeIRI("NaturalType")»
+				SubClassOf:
+					Annotations: rdfs:label "objectGlobal"
+					«makeIRI("plays")» max 1 «makeIRI(roleGroup)»
+			
+			Class: «makeIRI(roleGroup.name + "Elements")»
+				DisjointUnionOf:
+					Annotations: rdfs:label "objectGlobal"
+					«roleGroup.elementNames.join(", ", [makeIRI])»
+			
+			Class: «makeIRI(roleGroup.name + "Atoms")»
+				EquivalentTo:
+					Annotations: rdfs:label "objectGlobal"
+					«roleGroup.roleGroupAtoms.join(" or ", [makeIRI])»
+			
+			«compartmentTypes.filter[ compType | compType.contains(roleGroup) ]
+				.join("\n\n", [ compType | getCardAxiom(
+					"Class: " + makeIRI("Plays" + roleGroup.name) + "\n" + "    EquivalentTo:\n",
+					"Satisfy" + roleGroup.name + "In" + compType,
+					makeIRI("NaturalType") + " and ",
+					roleGroup.card,
+					makeIRI("plays"),
+					makeIRI(roleGroup.name + "Elements"),
+					compType) ])»
+			
+			«if (topLevelRoleGroups.contains(roleGroup)) '''
+				Class: «makeIRI("MustPlay" + roleGroup.name)»
+					EquivalentTo:
+						Annotations: rdfs:label "objectGlobal"
+						«roleGroup.roleGroupAtoms.join(" or ", [ roleType | makeIRI("Plays" + roleType)])»
+					SubClassOf:
+						Annotations: rdfs:label "objectGlobal"
+						«makeIRI("Plays" + roleGroup.name)»
+			''' else ""»
+	 	'''])»
+	 '''
+
+	/**
 	 * This method creates the closing comment for the generated OWL file.
 	 */
 	private def String printEndOfFile() '''
@@ -1166,12 +1284,20 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			printCompartmentTypeThatDontPlayRoles
 		}»
 		«printNaturalType»
-		«printRoleType»
+		«if (separateRoleTypeAxioms) {
+			printRoleTypeSeparated
+		} else {
+			printRoleType
+		}»
 		«printPlays»
 		«printNaturalTypeInheritance»
 		«printFills»
 		«printRelationshipTypes»
-		«printRoleGroups»
+		«if (roleGroupDeclarationV2) {
+			printRoleGroups_v2
+		} else {
+			printRoleGroups_v1
+		}»
 		«printCardinalConstraints»
 		«printOccurrenceConstraints»
 		«printEndOfFile»

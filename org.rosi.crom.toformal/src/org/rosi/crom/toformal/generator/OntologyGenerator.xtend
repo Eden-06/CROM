@@ -22,6 +22,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	val boolean compTypesPlayRoles     = false
 	val boolean roleGroupDeclarationV2 = false
 	val boolean separateRoleTypeAxioms = true
+	val boolean localRSTAxioms         = true
 	
 	var CROModel crom
 	var Set<String> compartmentTypes
@@ -1084,6 +1085,43 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	'''
 
 	/**
+	 * This method prints all relationship types and its constraints. Important: The condition that
+	 * relationship types have different domain and range are not checked here, even if it would be
+	 * possible, since that is a well-formedness check.
+	 */
+	private def String printRelationshipTypesLocal() '''
+	«section("The declaration of all relationship types that occur in the model")»
+	
+	«relationshipTypes.join("\n\n", [ relType | '''
+		«subsection(relType)»
+		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)].join("\n", [ compType | '''
+		ObjectProperty: «makeIRI(compType + "." + relType)»
+			Domain:
+				Annotations: rdfs:isDefinedBy «makeIRI("___Not" + compType + "." + relType + ".Bottom")»
+				owl:Nothing
+			Domain:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + relType + ".Domain")»
+				«makeIRI(crom.rel.get(relType -> compType).key)»
+			Range:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + relType + ".Range")»
+				«makeIRI(crom.rel.get(relType -> compType).value)»
+
+		Class: «makeIRI("___Not" + compType + "." + relType + ".Bottom")»
+		Class: «makeIRI("___" + compType + "." + relType + ".Domain")»
+		Class: «makeIRI("___" + compType + "." + relType + ".Range")»
+		Class: «makeIRI(compType)»
+			SubClassOf: 
+				«makeIRI("___" + compType + "." + relType + ".Domain")» and
+				«makeIRI("___" + compType + "." + relType + ".Range")»
+		Class: «makeIRI("Not" + compType)»
+			EquivalentTo:
+				not «makeIRI(compType)»
+			SubClassOf:
+				«makeIRI("___Not" + compType + "." + relType + ".Bottom")»
+		'''])»''' ])»
+	'''
+
+	/**
 	 * This method creates the axioms for the cardinal constraints of the relationship types.
 	 */
 	private def String printCardinalConstraints() '''
@@ -1292,7 +1330,11 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«printPlays»
 		«printNaturalTypeInheritance»
 		«printFills»
-		«printRelationshipTypes»
+		«if (localRSTAxioms) {
+			printRelationshipTypesLocal
+		} else {
+			printRelationshipTypes
+		}»
 		«if (roleGroupDeclarationV2) {
 			printRoleGroups_v2
 		} else {

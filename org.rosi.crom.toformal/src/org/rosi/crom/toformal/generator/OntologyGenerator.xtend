@@ -1266,18 +1266,22 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def String printRoleGroups_v2() '''
 		«section("The declaration of all role groups that appear in the CROM.")»
+		«if (roleGroups.empty) ""
+		else '''
 		Class: «makeIRI("RoleGroups")»
 			«roleGroups.join(AnnotatedDisJointUnionOf(), ",\n	", "\n", [makeIRI] )»
-			
+		
 		Class: «makeIRI("RoleGroups")»
 			SubClassOf:
 				Annotations: rdfs:label "objectGlobal"
 				inverse («makeIRI("plays")») exactly 1 owl:Thing
 		
 		Class: «makeIRI("PotentialPlayer")»
-				SubClassOf:
-					Annotations: rdfs:label "objectGlobal"
-					«roleGroups.join(" and\n",[ roleGroup | makeIRI("plays") + " max 1 " + makeIRI(roleGroup)])»
+			SubClassOf:
+				Annotations: rdfs:label "objectGlobal"
+				«roleGroups.join(" and\n",[ roleGroup | makeIRI("plays") + " max 1 " + makeIRI(roleGroup)])»
+		'''»
+		
 		
 		«roleGroups.join("\n\n", [roleGroup | '''
 			«subsection(roleGroup.name)»
@@ -1447,7 +1451,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		Class: «makeIRI("RoleGroup")»
 			EquivalentTo:
 				Annotations: rdfs:label "objectGlobal"
-				{«roleGroups.join(",\n", [ rg | makeIRI(rg.name) ])»}
+				«if (roleGroups.empty) "owl:Nothing"
+				else "{"+roleGroups.join(",\n", [ rg | makeIRI(rg.name) ])+"}"»
 		
 		«roleGroups.join("\n\n", [roleGroup |
 			val ct = getCompTypeOfRoleGroup(roleGroup)

@@ -20,9 +20,12 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	var int numberOfRoleGroups
 	val int headingWidth = 100
 	val boolean compTypesPlayRoles     = false
-	val boolean roleGroupDeclarationV2 = false
+	val int roleGroupDeclaration       = 1
 	val boolean separateRoleTypeAxioms = true
 	val boolean localRSTAxioms         = true
+	val int fillsAxioms                = 2
+	
+	val boolean useNominalsAsRTs       = true
 	
 	var CROModel crom
 	var Set<String> compartmentTypes
@@ -45,7 +48,11 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			name = "CROMOntology"
 		visitor.visit(crom, model)
 		setUp()
-		return printOntology(name)
+		if (useNominalsAsRTs) {
+			return printOntologyWithNominals(name)	
+		} else {
+			return printOntology(name)
+		}
 	}
 	
 	
@@ -363,7 +370,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		return (if (card.constraining)
 				prefix
 				+ "        Annotations: rdfs:isDefinedBy " + makeIRI("___" + metaConcept) + "\n"
-				+ "        " + prefix2
+				+ "        " + prefix2 + "("
 				else "")
 			+ (if (card.minConstraining)
 				"(" + dlRole + " min " + card.lower + " " + qualNumRestr + ")"
@@ -375,7 +382,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				"(" + dlRole + " max " + card.upper + " " + qualNumRestr + ")"
 				else "")
 			+ (if (card.constraining)
-				"\n\n"
+				")\n\n"
 				+ "Class: " + makeIRI("___" + metaConcept) + "\n"
 				+ "\n"
 				+ "Class: " + makeIRI(compType) + "\n"
@@ -454,6 +461,21 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 		return list.join("(" + makeIRI("RoleGroups") + " or\n\t", " or\n\t", "", [ makeIRI ]) + ")"
 	 	}	
 	 }
+	 
+	 private def String getFillingRTs(String natType, String compType) {
+	 	val list = crom.fills
+	 		.filter[ entry | entry.key.key.equals(natType) ]
+	 		.filter[ entry | entry.key.value.equals(compType)]
+	 		.map[ entry | entry.value ]
+	 		.toList
+	 	if (list.empty) {
+	 		return makeIRI("RoleGroup")
+	 	} else {
+	 		return list.join("(" + makeIRI("RoleGroup") + " or\n\t{", ",\n\t", "})", [ makeIRI ])
+	 	}	
+	 }
+	 
+	 
 	 
 	 private def String getFillerNTs(String roleType) {
 	 	val list = crom.fills
@@ -558,7 +580,6 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			.contains(true)
 	}
 
-
 	private def String getRGCardinality(RoleGroup rg) {
 		return makeIRI("PotentialPlayer")
 			+ (if (rg.card.minConstraining)
@@ -575,6 +596,36 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				+ rg.card.upper
 				+ getElementNames(rg).join(" (", " or\n\t", ")", [ makeIRI ])
 				+ ")" else "")
+	}
+
+	private def String getRGPlayingConditionWithNominals(RoleGroup roleGroup) {
+		makeIRI("NaturalType")
+		+ (if (roleGroup.card.minConstraining)
+			" and\n(" 
+			+ makeIRI("plays") 
+			+ " min " 
+			+ roleGroup.card.lower 
+			+ getElementNames(roleGroup).join(" {", ", ", "}", [ makeIRI ])
+			+ ")" else "")
+		+ (if (roleGroup.card.maxConstraining)
+			" and\n("
+			+ makeIRI("plays")
+			+ " max "
+			+ roleGroup.card.upper
+			+ getElementNames(roleGroup).join(" {", ", ", "}", [ makeIRI ])
+			+ ")" else "")
+	}
+
+
+	private def String getCompTypeOfRoleGroup(RoleGroup roleGroup) {
+		val atoms = getRoleGroupAtoms(roleGroup)
+		val ct = compartmentTypes.findFirst[ compType | getParts(compType).containsAll(atoms) ]
+		if (ct==null) {
+			throw new CROMOntologyGeneratorException(
+				"Invalid role group detected whose atoms are not contained\n"
+				+ "in a single compartment type:\n"
+				+ roleGroup)}
+		return ct
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1043,6 +1094,25 @@ class OntologyGenerator extends AbstractCROMGenerator {
 				owl:Nothing «getParts(compType).join("or\n\t"," or\n\t","", [ makeIRI ])»'''])»
 	 '''
 
+	private def String printFills_v2() '''
+		«section("fills relation")»
+		«naturalTypes.join("\n\n", [natType | '''
+		Class: «makeIRI(natType)»
+			SubClassOf:
+				Annotations: rdfs:label "objectGlobal"
+				«makeIRI("plays")» only «getFillingRTs(natType)»'''])»
+		
+		«compartmentTypes.join("\n\n", [compType | '''
+		Class: «makeIRI("___" + compType + ".Parts")»
+		Class: «makeIRI(compType)»
+			SubClassOf:
+				«makeIRI("___" + compType + ".Parts")»
+		Class: «makeIRI("RoleType")»
+			SubClassOf:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + ".Parts")»
+				owl:Nothing «getParts(compType).join("or\n\t"," or\n\t","", [ makeIRI ])»'''])»
+	'''
+
 	/**
 	 * This method introduces the plays relation.
 	 */
@@ -1300,6 +1370,10 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 	'''])»
 	 '''
 
+	private def String printRoleGroups_v3() '''
+		
+	'''
+
 	/**
 	 * This method creates the closing comment for the generated OWL file.
 	 */
@@ -1307,6 +1381,251 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«section("This is the end of the automatically generated OWL File.",
 			"If you want to add any axioms manually you should do it below here.")»
 	'''
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Methods for printing the ontology with nominals												 ///
+////////////////////////////////////////////////////////////////////////////////////////////////////	
+	
+	private def String printOWLThingAndOthersWithNominals() '''
+		«section("General axioms and declarations, independent of the CROModel")»
+		Class: owl:Thing
+			SubClassOf:
+				«makeIRI("CompartmentType")»
+				
+		Class: «makeIRI("CompartmentType")»
+		Class: «makeIRI("NaturalType")»
+		
+		«roleTypes.join("\n", [ roleType | '''
+			Individual: «makeIRI(roleType)»
+				Types: Annotations: rdfs:label "objectGlobal" not «makeIRI("NaturalType")»
+		'''])»
+		
+		«roleGroups.join("\n", [ rg | '''
+			Individual: «makeIRI(rg)»
+				Types: Annotations: rdfs:label "objectGlobal" not «makeIRI("NaturalType")»
+		'''])»
+		
+		Individual: «makeIRI("occurrenceCounter")»
+			Types:
+				Annotations: rdfs:label "objectGlobal"
+				not «makeIRI("NaturalType")»
+		
+		DifferentIndividuals:
+			Annotations: rdfs:label "objectGlobal"
+			«makeIRI("occurrenceCounter")
+			»«if (!roleTypes.empty) roleTypes.join(",\n", ",\n", "", [ makeIRI ]) else ""
+			»«if (!roleGroups.empty) roleGroups.join(",\n", ",\n", "", [ rg | makeIRI(rg.name)]) else ""»
+	'''
+	
+	private def String printRoleTypeWithNominals() '''
+		«section("The declaration of all role types that occur in the model")»
+		Class: «makeIRI("RoleType")»
+			EquivalentTo:
+				Annotations: rdfs:label "objectGlobal"
+				{«roleTypes.join(",\n", [ makeIRI ])»}
+	'''
+	
+	private def String printPlaysWithNominals() '''
+	«section("The declaration of the plays relation as OWL object property")»
+	
+	ObjectProperty: owl:bottomObjectProperty
+	
+	ObjectProperty: «makeIRI("plays")»
+		Domain:
+			Annotations: rdfs:label "objectGlobal"
+			«makeIRI("NaturalType")»
+		Range:
+			Annotations: rdfs:label "objectGlobal"
+			«makeIRI("RoleType")» or «makeIRI("RoleGroup")»
+		SubPropertyOf:
+			owl:bottomObjectProperty
+			
+	'''
+	
+	private def String printRoleGroupsWithNominals() '''
+		«section("The declaration of all role groups that occur in the model")»
+		Class: «makeIRI("RoleGroup")»
+			EquivalentTo:
+				Annotations: rdfs:label "objectGlobal"
+				{«roleGroups.join(",\n", [ rg | makeIRI(rg.name) ])»}
+		
+		«roleGroups.join("\n\n", [roleGroup |
+			val ct = getCompTypeOfRoleGroup(roleGroup)
+			'''
+			«subsection(roleGroup.name)»
+			Class: «makeIRI("___" + ct + "." + roleGroup.name + ".PlaysDef1")»
+			Class: «makeIRI("___" + ct + "." + roleGroup.name + ".PlaysDef2")»
+			Class: «makeIRI(ct)»
+				SubClassOf:
+					«makeIRI("___" + ct + "." + roleGroup.name + ".PlaysDef1")» and «makeIRI("___" + ct + "." + roleGroup.name + ".PlaysDef2")»
+			Class: «makeIRI("Plays" + roleGroup.name)»
+				EquivalentTo:
+					Annotations: rdfs:isDefinedBy «makeIRI("___" + ct + "." + roleGroup.name + ".PlaysDef1")»
+					«makeIRI("plays")» some {«makeIRI(roleGroup)»}
+				EquivalentTo:
+					Annotations: rdfs:isDefinedBy «makeIRI("___" + ct + "." + roleGroup.name + ".PlaysDef2")»
+					«getRGPlayingConditionWithNominals(roleGroup)»
+			
+			«if (topLevelRoleGroups.contains(roleGroup)) 
+			compartmentTypes.filter[ compType | compType.contains(roleGroup) ]
+				.join("\n\n", [ compType | '''
+				Class: «makeIRI("___" + compType + "." + roleGroup.name + ".MustPlay1")»
+				Class: «makeIRI("___" + compType + "." + roleGroup.name + ".MustPlay2")»
+				Class: «makeIRI(compType)»
+					SubClassOf:
+						«makeIRI("___" + compType + "." + roleGroup.name + ".MustPlay1")» and «makeIRI("___" + compType + "." + roleGroup.name + ".MustPlay2")»
+						
+				Class: «makeIRI("MustPlay" + roleGroup.name)»
+					EquivalentTo:
+						Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + roleGroup.name + ".MustPlay1")»
+						«roleGroup.roleGroupAtoms.join(" or\n", [ roleType | "(" + makeIRI("plays") + " some {" + makeIRI(roleType) + "})"])»
+					SubClassOf:
+						Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + roleGroup.name + ".MustPlay2")»
+						«getRGPlayingConditionWithNominals(roleGroup)» and
+						«makeIRI("plays")» some {«makeIRI(roleGroup)»}
+				''']) 
+			else ""»
+			'''])»
+	'''
+	
+	private def String printFillsWithNominals() '''
+		«section("fills relation")»
+		«naturalTypes.join("\n\n", [ natType | compartmentTypes.join("\n", [ compType | '''
+			Class: «makeIRI("___" + compType + "." + natType + ".Fills")»
+			Class: «makeIRI(compType)»
+				SubClassOf: «makeIRI("___" + compType + "." + natType + ".Fills")»''']) ])»
+		
+		«naturalTypes.join("\n\n", [ natType | "Class: " + makeIRI(natType) +"\n\t" + compartmentTypes.join("\n\t", [ compType | '''
+			SubClassOf:
+					Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + natType + ".Fills")»
+					«makeIRI("plays")» only «getFillingRTs(natType, compType)»''']) ])»
+	'''
+	
+	private def String printRelationshipTypesWithNominals() '''
+	«section("The declaration of all relationship types that occur in the model")»
+	
+	«relationshipTypes.join("\n\n", [ relType | '''
+		«subsection(relType)»
+		«compartmentTypes.filter[ compType | crom.rel.containsKey(relType -> compType)].join("\n", [ compType | '''
+		ObjectProperty: «makeIRI(compType + "." + relType)»
+			Domain:
+				Annotations: rdfs:isDefinedBy «makeIRI("___Not" + compType + "." + relType + ".Bottom")»
+				owl:Nothing
+			Domain:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + relType + ".Domain")»
+				«makeIRI("plays")» some {«makeIRI(crom.rel.get(relType -> compType).key)»}
+			Range:
+				Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + relType + ".Range")»
+				«makeIRI("plays")» some {«makeIRI(crom.rel.get(relType -> compType).value)»}
+
+		Class: «makeIRI("___Not" + compType + "." + relType + ".Bottom")»
+		Class: «makeIRI("___" + compType + "." + relType + ".Domain")»
+		Class: «makeIRI("___" + compType + "." + relType + ".Range")»
+		Class: «makeIRI(compType)»
+			SubClassOf: 
+				«makeIRI("___" + compType + "." + relType + ".Domain")» and
+				«makeIRI("___" + compType + "." + relType + ".Range")»
+		Class: «makeIRI("Not" + compType)»
+			EquivalentTo:
+				not «makeIRI(compType)»
+			SubClassOf:
+				«makeIRI("___Not" + compType + "." + relType + ".Bottom")»
+		'''])»''' ])»
+	'''
+	
+	private def String printOccurrenceConstraintsWithNominals() '''
+		«section("The declaration of the occurrence constraints.")»
+		«compartmentTypes.filter[ compType | occurrenceConstraintsForRoleType.containsKey(compType) ]
+			.join("", [ compType | roleTypes
+				.filter[ roleType | occurrenceConstraintsForRoleType.get(compType)
+					.map[ entry | entry.value].contains(roleType) ]
+				.join("", [ roleType | 
+					(if (getOccurrenceConstraintCardinality(compType, roleType).isConstraining) {
+						"Class: " + makeIRI("___" + compType + "." + roleType + ".Occurrence") + "\n"
+						+ "Class: " + makeIRI(compType) +"\n"
+						+ "\tSubClassOf: " + makeIRI("___" + compType + "." + roleType + ".Occurrence") + "\n"
+						+ "Individual: " + makeIRI(roleType) + "\n"
+						+ "\tTypes:\n"
+						+ "\t\tAnnotations: rdfs:isDefinedBy " + makeIRI("___" + compType + "." + roleType + ".Occurrence") + "\n"
+						+ "\t\t"
+					} else "") +
+					(if (getOccurrenceConstraintCardinality(compType, roleType).isMinConstraining) {
+						"(inverse " + makeIRI("plays") + " min " + getOccurrenceConstraintCardinality(compType, roleType).lower + ")"
+					} else "") +
+					(if (getOccurrenceConstraintCardinality(compType, roleType).isMinMaxConstraining) {
+						" and "
+					} else "") +
+					(if (getOccurrenceConstraintCardinality(compType, roleType).isMaxConstraining) {
+						"(inverse " + makeIRI("plays") + " max " + getOccurrenceConstraintCardinality(compType, roleType).upper + ")"
+					} else "") +
+					(if (getOccurrenceConstraintCardinality(compType, roleType).isConstraining)
+						"\n\n" else "")
+				])])»
+		
+		«compartmentTypes.filter[ compType | occurrenceConstraintsForRoleGroups.containsKey(compType) ]
+					.join("", [ compType | roleGroups
+						.filter[ rg | occurrenceConstraintsForRoleGroups.get(compType).map[ entry | entry.value].contains(rg) ]
+						.join("", [ rg | 
+							(if (getOccurrenceConstraintCardinality(compType, rg.name).isConstraining) {
+								"Class: " + makeIRI("___" + compType + "." + rg.name + ".Occurrence") + "\n"
+								+ "Class: " + makeIRI(compType) +"\n"
+								+ "\tSubClassOf: " + makeIRI("___" + compType + "." + rg.name + ".Occurrence") + "\n"
+								+ "Individual: " + makeIRI(rg) + "\n"
+								+ "\tTypes:\n"
+								+ "\t\tAnnotations: rdfs:isDefinedBy " + makeIRI("___" + compType + "." + rg.name + ".Occurrence") + "\n"
+								+ "\t\t"
+							} else "") +
+							(if (getOccurrenceConstraintCardinality(compType, rg.name).isMinConstraining) {
+								"(inverse " + makeIRI("plays") + " min " + getOccurrenceConstraintCardinality(compType, rg.name).lower + ")"
+							} else "") +
+							(if (getOccurrenceConstraintCardinality(compType, rg.name).isMinMaxConstraining) {
+								" and "
+							} else "") +
+							(if (getOccurrenceConstraintCardinality(compType, rg.name).isMaxConstraining) {
+								"(inverse " + makeIRI("plays") + " max " + getOccurrenceConstraintCardinality(compType, rg.name).upper + ")"
+							} else "") +
+							(if (getOccurrenceConstraintCardinality(compType, rg.name).isConstraining)
+								"\n\n" else "")
+						])])»
+		
+	'''
+	
+	private def String printCardinalConstraintsWithNominals() '''
+		«section("Cardinal constraints of relationship types")»
+		«relationshipTypes.join("\n", [ relType | 
+			subsection(relType) + "\n" +
+			compartmentTypes.join("", [ compType | 
+				roleTypes.join("", [ roleType | 
+					if (crom.card.containsKey(relType -> compType)) {
+						(if (crom.rel.get(relType -> compType).key.equals(roleType)) // roleType ----relType----> ...
+							getCardAxiom(
+								"Class: owl:Thing\n\tSubClassOf:\n",
+								compType + "." + relType + ".CardinalityDomain",
+								"(not (" + makeIRI("plays") + " some {" + makeIRI(roleType) + "}))\n\t\t or ",
+								crom.card.get(relType -> compType).value,
+								makeIRI(compType + "." + relType),
+								"owl:Thing",
+								compType)
+						else (if (crom.rel.get(relType -> compType).value.equals(roleType)) // ... ----relType----> roleType
+							getCardAxiom(
+								"Class: owl:Thing\n\tSubClassOf:\n",
+								compType + "." + relType + ".CardinalityRange",
+								"(not (" + makeIRI("plays") + " some {" + makeIRI(roleType) + "}))\n\t\t or ",
+								crom.card.get(relType -> compType).key,
+								"inverse (" + makeIRI(compType + "." + relType) + ")",
+								"owl:Thing",
+								compType)
+						else ""))
+					} else ""
+					
+				])])])»
+	'''
+	
+	
+	
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Actually printing the ontology																 ///
+////////////////////////////////////////////////////////////////////////////////////////////////////	
 
 	/** 
 	 * This method actually prints the whole ontology document in Manchester OWL syntax.
@@ -1329,19 +1648,39 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		}»
 		«printPlays»
 		«printNaturalTypeInheritance»
-		«printFills»
+		«switch fillsAxioms {
+			case 1: printFills
+			case 2: printFills_v2}»
 		«if (localRSTAxioms) {
 			printRelationshipTypesLocal
 		} else {
 			printRelationshipTypes
 		}»
-		«if (roleGroupDeclarationV2) {
-			printRoleGroups_v2
-		} else {
-			printRoleGroups_v1
-		}»
+		«switch roleGroupDeclaration {
+			case 1:	printRoleGroups_v1
+			case 2: printRoleGroups_v2
+			case 3: printRoleGroups_v3}»
 		«printCardinalConstraints»
 		«printOccurrenceConstraints»
+		«printEndOfFile»
+	'''	
+	
+	private def String printOntologyWithNominals(String modelname) '''
+		«debug»
+		«printHeader(modelname)»
+		«printAnnotationsAndDatatypes»
+		«printOWLThingAndOthersWithNominals»
+		«printCompartmentTypeThatDontPlayRoles»
+		«printNaturalType»
+		«printNaturalTypeInheritance»
+		«printRoleTypeWithNominals»
+		«printPlaysWithNominals»
+		«printFillsWithNominals»
+		«printRelationshipTypesWithNominals»
+		«printRoleGroupsWithNominals»
+		
+		«printCardinalConstraintsWithNominals»
+		«printOccurrenceConstraintsWithNominals»
 		«printEndOfFile»
 	'''	
 }

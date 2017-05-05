@@ -944,6 +944,43 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«compartmentTypes.join("\n", [ compType | "Class: " + makeIRI(compType) + 
 			if (compType.isCompartmentTypeEmpty) "\n    SubClassOf: owl:Nothing" else ""])»
 	'''
+	
+	/**
+	 * This method creates the output for the compartment types that occur in the CROModel. It does
+	 * not handle the inheritance relation between compartment types.
+	 */
+	private def String printCompartmentV3() '''
+		«section("The declaration of all compartment types that occur in the model")»
+		Class: «makeIRI("CompartmentType")»
+		«compartmentTypes.join("    DisjointUnionOf:\n"
+			                 + "        ", ",\n        ", "\n", [ makeIRI ])»
+		
+		«compartmentTypes.join("\n", [ compType | "Class: " + makeIRI(compType) + 
+			(if (compType.isCompartmentTypeEmpty) "\n    SubClassOf: owl:Nothing" else "") +
+			(if (!crom.fills.map[entry|entry.key.key].contains(compType)) "\n	SubClassOf: Annotations: rdfs:label \"objectGlobal\" owl:Nothing" else "")])»
+		
+		ObjectProperty: «makeIRI("nested")»
+		
+		«crom.fills
+			.filter[ entry | compartmentTypes.contains(entry.key.key)]
+			.map[entry | entry.key.key -> entry.key.value]
+			.toSet
+			.join("\n\n", [entry | '''
+			Class: «makeIRI("___" + entry.value + "." + entry.key + "PlaysNothing")»
+			Class: «makeIRI("___" + entry.value + "." + entry.key + "PlaysSomething.Def")»
+			Class: «makeIRI(entry.value)»
+				SubClassOf:
+					«makeIRI("___" + entry.value + "." + entry.key + "PlaysNothing")» or («makeIRI("nested")» some «makeIRI(entry.key)»),
+					«makeIRI("___" + entry.value + "." + entry.key + "PlaysSomething.Def")»
+			Class: «makeIRI(entry.key+"PlaysSomething")»
+				EquivalentTo:
+					Annotations: rdfs:isDefinedBy «makeIRI("___" + entry.value + "." + entry.key + "PlaysSomething.Def")»
+					«makeIRI(entry.key)» and («makeIRI("plays")» some owl:Thing)
+				SubClassOf:
+					Annotations: rdfs:isDefinedBy «makeIRI("___" + entry.value + "." + entry.key + "PlaysNothing")»
+					owl:Nothing
+		'''])»
+	'''
 
 	/**
 	 * This method creates the output for the natural types that occur in the CROModel. It also
@@ -1401,12 +1438,20 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		«roleTypes.join("\n", [ roleType | '''
 			Individual: «makeIRI(roleType)»
-				Types: Annotations: rdfs:label "objectGlobal" not «makeIRI("NaturalType")»
+				Types: 
+					Annotations: rdfs:label "objectGlobal"
+					(not «makeIRI("NaturalType")») «compartmentTypes
+						.filter[compType | crom.fills.map[ entry | entry.key.key].contains(compType)]
+						.join("and ", " and ", "", [ ct | "(not " + makeIRI(ct) + ")" ])»
 		'''])»
 		
 		«roleGroups.join("\n", [ rg | '''
 			Individual: «makeIRI(rg)»
-				Types: Annotations: rdfs:label "objectGlobal" not «makeIRI("NaturalType")»
+				Types:
+					Annotations: rdfs:label "objectGlobal"
+					(not «makeIRI("NaturalType")») «compartmentTypes
+						.filter[compType | crom.fills.map[ entry | entry.key.key].contains(compType)]
+						.join(" and ", " and ", "", [ ct | "(not " + makeIRI(ct) + ")" ])»
 		'''])»
 		
 		Individual: «makeIRI("occurrenceCounter")»
@@ -1437,7 +1482,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	ObjectProperty: «makeIRI("plays")»
 		Domain:
 			Annotations: rdfs:label "objectGlobal"
-			«makeIRI("NaturalType")»
+			«makeIRI("NaturalType") + compartmentTypes
+				.filter[compType | crom.fills.map[ entry | entry.key.key].contains(compType)]
+				.join(" or ", " or ", "", [ makeIRI ])»
 		Range:
 			Annotations: rdfs:label "objectGlobal"
 			«makeIRI("RoleType")» or «makeIRI("RoleGroup")»
@@ -1504,6 +1551,20 @@ class OntologyGenerator extends AbstractCROMGenerator {
 			SubClassOf:
 					Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + natType + ".Fills")»
 					«makeIRI("plays")» only «getFillingRTs(natType, compType)»''']) ])»
+		
+		«compartmentTypes
+			.filter[compType | crom.fills.map[ entry | entry.key.key].contains(compType)]
+			.join("\n\n", [ ct | compartmentTypes.join("\n", [ compType | '''
+				Class: «makeIRI("___" + compType + "." + ct + ".Fills")»
+				Class: «makeIRI(compType)»
+					SubClassOf: «makeIRI("___" + compType + "." + ct + ".Fills")»''']) ])»
+		
+		«compartmentTypes
+			.filter[compType | crom.fills.map[ entry | entry.key.key].contains(compType)]
+			.join("\n\n", [ ct | "Class: " + makeIRI(ct) +"\n\t" + compartmentTypes.join("\n\t", [ compType | '''
+				SubClassOf:
+						Annotations: rdfs:isDefinedBy «makeIRI("___" + compType + "." + ct + ".Fills")»
+						«makeIRI("plays")» only «getFillingRTs(ct, compType)»''']) ])»
 	'''
 	
 	private def String printRelationshipTypesWithNominals() '''
@@ -1675,7 +1736,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		«printHeader(modelname)»
 		«printAnnotationsAndDatatypes»
 		«printOWLThingAndOthersWithNominals»
-		«printCompartmentTypeThatDontPlayRoles»
+		«printCompartmentV3»
 		«printNaturalType»
 		«printNaturalTypeInheritance»
 		«printRoleTypeWithNominals»

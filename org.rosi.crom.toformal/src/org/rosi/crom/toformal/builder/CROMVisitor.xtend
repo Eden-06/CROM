@@ -32,7 +32,7 @@ import crom_l1_composed.Group
 import crom_l1_composed.DataType
 
 class CROMVisitor {
-
+	
 	def dispatch List<String> atoms(crom_l1_composed.RoleGroup a) {
 		val r = new ArrayList<String>()
 		for (s : a.elements)
@@ -58,7 +58,7 @@ class CROMVisitor {
 
 	def dispatch Object visitRoleGroup(AbstractRoleRef ref) {
 		val r = ref.ref
-		if(r != null) return visitRoleGroup(r)
+		if(r !== null) return visitRoleGroup(r)
 	}
 
 	def dispatch Object visitRoleGroup(RoleType rt) {
@@ -81,12 +81,12 @@ class CROMVisitor {
 
 	def dispatch void visit(CROModel builder, NaturalType nt) {
 		builder.nt.add(nt.name)
-		builder.fields.put(nt.name, nt.attributes.map[a|a.name -> a.type.name])
+		builder.fields.put(nt.name, nt.attributes.map[a|a.name -> a.type?.name])
 	}
 	
 	def dispatch void visit(CROModel builder, DataType dt) {
 		builder.dt.add(dt.name)
-		builder.fields.put(dt.name, dt.attributes.map[a|a.name -> a.type.name])
+		builder.fields.put(dt.name, dt.attributes.map[a|a.name -> a.type?.name])
 	}
 
 	def dispatch void visit(CROModel builder, RoleType rt) {
@@ -103,7 +103,7 @@ class CROMVisitor {
 			visit(builder, rst, ct.name)
 		for (c : ct.constraints)
 			visit(builder, c, ct.name)
-		builder.fields.put(ct.name, ct.attributes.map[a| a.name->a.type.name ])
+		builder.fields.put(ct.name, ct.attributes.map[a| a.name -> a.type?.name ])
 	}
 
 	def dispatch void visit(CROModel builder, Relationship rst, String ct) {
@@ -121,7 +121,7 @@ class CROMVisitor {
 			RoleType: (fills.filled as RoleType)
 			default: null
 		}
-		if (r != null && r.eContainer != null && r.eContainer.eContainer != null) {
+		if (r !== null && r.eContainer !== null && r.eContainer.eContainer !== null) {
 			val ct = ((r.eContainer.eContainer) as CompartmentType).name
 			val ot = fills.filler.name
 			val rs = fills.filled.atoms()
@@ -146,7 +146,7 @@ class CROMVisitor {
 		
 		val rts=collectRoles(part.role)
 		for (rt:rts){
-			builder.fields.put( ct+"."+rt.name, rt.attributes.map[a|a.name->a.type.name])
+			builder.fields.put( ct+"."+rt.name, rt.attributes.map[a|a.name -> a.type?.name])
 		}				
 	}
 
@@ -192,7 +192,7 @@ class CROMVisitor {
 			Total: "total"
 			default: null
 		}
-		if (c != null)
+		if (c !== null)
 			builder.intra.add(rst -> ct -> c)
 	}
 
@@ -206,7 +206,7 @@ class CROMVisitor {
 			RelationshipExclusion: "exclusion"
 			default: null
 		}
-		if (c != null)
+		if (c !== null)
 			builder.inter.put(f -> ct -> s, c)
 	}
 

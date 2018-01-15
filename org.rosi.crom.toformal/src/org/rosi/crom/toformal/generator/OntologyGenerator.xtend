@@ -11,7 +11,7 @@ import org.rosi.crom.toformal.builder.CROModel
 import org.rosi.crom.toformal.builder.Cardinality
 import org.rosi.crom.toformal.builder.RoleGroup
 import java.util.HashMap
-import org.apache.commons.lang.StringUtils
+import java.util.Collections
 
 class OntologyGenerator extends AbstractCROMGenerator {
 
@@ -62,6 +62,10 @@ class OntologyGenerator extends AbstractCROMGenerator {
 /// Methods used in the setup																	 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	private def String repeat(String s, int n) {
+		return String.join("", Collections.nCopies(n, s));
+	}
+
 	private def void setUp() {
 		
 		numberOfRoleGroups = 0
@@ -80,6 +84,8 @@ class OntologyGenerator extends AbstractCROMGenerator {
 //		checkRoleType
 		
 	}
+
+
 
 	/** 
 	 * Convert crom.ct from ArrayList<String> to Set<String>.
@@ -209,10 +215,9 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		
 		
-		
-		«StringUtils.repeat("#", headingWidth)»
-		# «title» «if (title.length+4 <= headingWidth) StringUtils.repeat(" ", headingWidth - title.length - 4) + "#" else ""»
-		«StringUtils.repeat("#", headingWidth)»
+		«String.join("", Collections.nCopies(headingWidth, "#"))»
+		# «title» «if (title.length+4 <= headingWidth) repeat(" ", headingWidth - title.length - 4) + "#" else ""»
+		«String.join("", Collections.nCopies(headingWidth, "#"))»
 		
 	'''
 
@@ -225,10 +230,10 @@ class OntologyGenerator extends AbstractCROMGenerator {
 		
 		
 		
-		«StringUtils.repeat("#", headingWidth)»
-		# «title» «if (title.length+4 <= headingWidth) StringUtils.repeat(" ", headingWidth - title.length - 4) + "#" else ""»
-		# «secondLine» «if (secondLine.length+4 <= headingWidth) StringUtils.repeat(" ", headingWidth - secondLine.length - 4) + "#" else ""»
-		«StringUtils.repeat("#", headingWidth)»
+		«repeat("#", headingWidth)»
+		# «title» «if (title.length+4 <= headingWidth) repeat(" ", headingWidth - title.length - 4) + "#" else ""»
+		# «secondLine» «if (secondLine.length+4 <= headingWidth) repeat(" ", headingWidth - secondLine.length - 4) + "#" else ""»
+		«repeat("#", headingWidth)»
 		
 	'''
 
@@ -237,7 +242,7 @@ class OntologyGenerator extends AbstractCROMGenerator {
 	 */
 	private def String subsection(String title) '''
 		### «title» ###
-		####«StringUtils.repeat("#",title.length)»####
+		####«repeat("#",title.length)»####
 		
 	'''
 

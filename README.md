@@ -2,7 +2,6 @@ CROM
 ====
 
 The Compartment Role Object Metamodel (CROM) is a feature-complete, comprehensive model for role-based modeling and programming languages.
-
 In addition to the Metamodel, this repository also includes a code generator from CROM to the [formal CROM](https://github.com/Eden-06/formalCROM).
 
 ## Installation
@@ -18,3 +17,6 @@ In addition to the Metamodel, this repository also includes a code generator fro
 * [Xtext](https://github.com/eclipse/xtext)
 * [Xtend](https://github.com/eclipse/xtext-xtend)
 
+## Graphical Representation of CROM
+
+[![Graphical model of the CROM metamodel](https://raw.githubusercontent.com/Eden-06/CROM/master/org.rosi.crom.metamodel/model/crom_l1_composed.png)](https://raw.githubusercontent.com/Eden-06/CROM/master/org.rosi.crom.metamodel/model/crom_l1_composed.svg)

@@ -19,4 +19,4 @@ In addition to the Metamodel, this repository also includes a code generator fro
 
 ## Graphical Representation of CROM
 
-[![Graphical model of the CROM metamodel](https://raw.githubusercontent.com/Eden-06/CROM/master/org.rosi.crom.metamodel/model/crom_l1_composed.png)](https://raw.githubusercontent.com/Eden-06/CROM/master/org.rosi.crom.metamodel/model/crom_l1_composed.svg)
+[![Graphical model of the CROM metamodel](https://raw.githubusercontent.com/Eden-06/CROM/master/org.rosi.crom.metamodel/model/crom_l1_composed.png)](https://github.com/Eden-06/CROM/blob/master/org.rosi.crom.metamodel/model/crom_l1_composed.svg)

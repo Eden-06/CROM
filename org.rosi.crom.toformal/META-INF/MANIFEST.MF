@@ -10,7 +10,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.xtend.lib.macro,
  com.google.guava,
  org.eclipse.xtext.xbase.lib,
- org.rosi.crom.metamodel;bundle-version="0.1.0",
+ org.rosi.crom.metamodel;bundle-version="1.0.0",
   org.eclipse.core.runtime,
  org.eclipse.emf.ecore.xmi
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

@@ -2,7 +2,7 @@
 <feature
       id="org.rosi.crom.build.feature"
       label="Code Generator"
-      version="0.9.2.qualifier">
+      version="1.0.0">
 
    <description url="https://github.com/Eden-06/CROM">
       The Compartment Role Object Metamodel (CROM) is a comprehensive
@@ -226,14 +226,14 @@ any resulting litigation.
          id="org.rosi.crom.toformal"
          download-size="0"
          install-size="0"
-         version="0.9.2"
+         version="1.0.1"
          unpack="false"/>
 
    <plugin
          id="org.rosi.crom.metamodel"
          download-size="0"
          install-size="0"
-         version="0.1.0"
+         version="1.0.0"
          unpack="false"/>
 
 </feature>

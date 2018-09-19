@@ -3,24 +3,18 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rosi.crom.metamodel</groupId>
 	<artifactId>org.rosi.crom.metamodel</artifactId>
-	<version>0.1.0</version>
+	<version>1.0.0</version>
 	<packaging>eclipse-plugin</packaging>
 
 	<properties>
 		<tycho.version>0.20.0</tycho.version>
-		<luna-repo.url>http://download.eclipse.org/releases/luna</luna-repo.url>
-		<epsilon-repo.url>http://download.eclipse.org/epsilon/updates/</epsilon-repo.url>
+		<photon-repo.url>http://download.eclipse.org/releases/photon/</photon-repo.url>
 	</properties>
 
 	<repositories>
 		<repository>
-			<id>luna</id>
-			<url>${luna-repo.url}</url>
-			<layout>p2</layout>
-		</repository>
-		<repository>
-			<id>epsilon</id>
-			<url>${epsilon-repo.url}</url>
+			<id>photon</id>
+			<url>${photon-repo.url}</url>
 			<layout>p2</layout>
 		</repository>
 	</repositories>

@@ -1,11 +1,12 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Toowl
+Bundle-Name: Commandline to the CROM model generator
 Bundle-SymbolicName: org.rosi.crom.toformal.cli
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.0.2
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.eclipse.emf.ecore.change,
  org.eclipse.emf.ecore.xmi,
  org.rosi.crom.metamodel;bundle-version="1.0.0",
  org.rosi.crom.toformal;bundle-version="1.0.1"
 Import-Package: org.eclipse.core.runtime
+Bundle-Vendor: TU Dresden

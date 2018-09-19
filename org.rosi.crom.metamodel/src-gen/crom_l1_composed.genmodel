@@ -5,7 +5,8 @@
     importerID="org.eclipse.emf.importer.ecore" complianceLevel="8.0" copyrightFields="false"
     operationReflection="true" importOrganizing="true">
   <foreignModel>../model/crom_l1_composed.ecore</foreignModel>
-  <genPackages prefix="Crom_l1_composed" disposableProviderFactory="true" ecorePackage="crom_l1_composed.ecore#/">
+  <genPackages prefix="Crom_l1_composed" disposableProviderFactory="true" fileExtensions="crom"
+      ecorePackage="crom_l1_composed.ecore#/">
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="crom_l1_composed.ecore#//Direction">
       <genEnumLiterals ecoreEnumLiteral="crom_l1_composed.ecore#//Direction/Undirected"/>
       <genEnumLiterals ecoreEnumLiteral="crom_l1_composed.ecore#//Direction/FirstToSecond"/>

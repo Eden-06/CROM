@@ -8,20 +8,20 @@
             id="org.rosi.crom.toformal.contribution"
             nameFilter="*.crom"
             objectClass="org.eclipse.core.resources.IFile">
-         <menu
+         <!---<menu
                label="Generate"
                path="additions"
                id="org.rosi.crom.toformal.menu">
             <separator
                   name="generate">
             </separator>
-         </menu>
+         </menu>//-->
          <action
                class="org.rosi.crom.toformal.popup.actions.GenerateFormalCromAction"
                enablesFor="+"
                id="org.rosi.crom.toformal.GenerateFormalCromAction"
                label="Formal CROM"
-               menubarPath="org.rosi.crom.toformal.menu/group1"
+               menubarPath="org.rosi.crom.metamodel.menu/group1"
                tooltip="Generate the corresponding formal CROM">
          </action>
       </objectContribution>
@@ -34,7 +34,7 @@
                enablesFor="+"
                id="org.rosi.crom.toformal.GenerateScrollCodeAction"
                label="SCROLL Code"
-               menubarPath="org.rosi.crom.toformal.menu/group1"
+               menubarPath="org.rosi.crom.metamodel.menu/group1"
                tooltip="Generate the corresponding SCROLL CROM">
          </action>
       </objectContribution>
@@ -47,7 +47,7 @@
                enablesFor="+"
                id="org.rosi.crom.toformal.GenerateOntologyAction"
                label="OWL Ontology"
-               menubarPath="org.rosi.crom.toformal.menu/group1"
+               menubarPath="org.rosi.crom.metamodel.menu/group1"
                tooltip="Generate the corresponding OWL Ontology">
          </action>
       </objectContribution>
@@ -60,7 +60,7 @@
                enablesFor="+"
                id="org.rosi.crom.toformal.GenerateRSQLAction"
                label="RSQL Data Definition"
-               menubarPath="org.rosi.crom.toformal.menu/group1"
+               menubarPath="org.rosi.crom.metamodel.menu/group1"
                tooltip="Generate the corresponding RSQL Data Definition">
          </action>
       </objectContribution>

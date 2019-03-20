@@ -13,5 +13,16 @@
             class="crom_l1_composed.Crom_l1_composedPackage"
             genModel="src-gen/crom_l1_composed.genmodel"/>
    </extension>
-
+	<extension point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            id="org.rosi.crom.metamodel.contribution"
+            nameFilter="*.crom"
+            objectClass="org.eclipse.core.resources.IFile">
+         <menu
+               label="Generate"
+               path="additions"
+               id="org.rosi.crom.metamodel.menu">
+         </menu>
+      </objectContribution> 
+   </extension>         
 </plugin>
